@@ -311,11 +311,140 @@ tr.detail td {
   margin-top: 2rem;
 }
 
+.panel-head {
+  margin-bottom: 1rem;
+}
+
+.panel-head.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel-head h2 {
+  margin: 0;
+}
+
+.panel-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.difficulty {
+  border-color: #2a4a52;
+  background: linear-gradient(180deg, #152028 0%, var(--panel) 100%);
+}
+
+.difficulty-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.diff-card {
+  border: 1px solid var(--line);
+  background: #0c1116;
+  padding: 0.9rem 0.85rem;
+}
+
+.diff-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.diff-sub {
+  margin: 0 0 0.75rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.diff-main {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.diff-sec {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.diff-clear {
+  border-top: 2px solid var(--exact);
+}
+.diff-boundary {
+  border-top: 2px solid var(--fuzzy);
+}
+.diff-decoy {
+  border-top: 2px solid var(--warn);
+}
+.diff-unresolvable {
+  border-top: 2px solid var(--danger);
+}
+
+.ablation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.ablation-grid h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.ablation-grid p {
+  margin: 0.2rem 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  color: var(--accent);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.btn.primary:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.status-msg {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.row-pending {
+  opacity: 0.55;
+  background: #12181e;
+}
+
+.pending-tag {
+  font-size: 0.72rem;
+  color: var(--human);
+}
+
+@media (max-width: 900px) {
+  .difficulty-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 800px) {
   .metrics {
     grid-template-columns: repeat(2, 1fr);
   }
   .split-view {
+    grid-template-columns: 1fr;
+  }
+  .difficulty-grid,
+  .ablation-grid {
     grid-template-columns: 1fr;
   }
 }

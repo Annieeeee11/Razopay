@@ -14,8 +14,8 @@ LLM pass: disabled / unavailable
 | Recall | 91.30% |
 | False positive rate | 2.33% |
 | Exception accuracy | 75.00% |
-| Throughput | 6182.23 records/sec |
-| Runtime (total) | 20.38 ms |
+| Throughput | 2875.07 records/sec |
+| Runtime (total) | 43.83 ms |
 
 ### Counts
 
@@ -40,11 +40,11 @@ LLM pass: disabled / unavailable
 
 | Pass timing | ms |
 | --- | ---: |
-| Exact | 0.47 |
-| Fuzzy | 15.71 |
-| Split | 0.83 |
-| LLM | 0.31 |
-| Total | 20.38 |
+| Exact | 0.60 |
+| Fuzzy | 11.54 |
+| Split | 0.69 |
+| LLM | 29.68 |
+| Total | 43.83 |
 
 ## Accuracy by case difficulty
 
@@ -54,6 +54,19 @@ LLM pass: disabled / unavailable
 | Boundary | 80.00% | 100.00% | — | at fuzzy threshold edge |
 | Decoy | 0.00% | 0.00% | 68.75% | correctly deferred, not auto-resolved to decoy |
 | Unresolvable | — | — | 100.00% | correctly flagged as exception |
+
+## LLM ablation
+
+_No LLM provider available — with-LLM run fell back to none._
+
+| | With LLM | Without LLM |
+| --- | ---: | ---: |
+| Match rate | 91.30% | 91.30% |
+| Precision | 97.67% | 97.67% |
+| Recall | 91.30% | 91.30% |
+| FP rate | 2.33% | 2.33% |
+| LLM matches | 0 | 0 |
+| Provider | none | none |
 
 ## Exception list
 

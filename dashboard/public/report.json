@@ -13,13 +13,13 @@
     "trueExceptionCount": 30,
     "predictedExceptionCount": 32,
     "correctlyFlaggedExceptions": 24,
-    "throughputRecordsPerSec": 6182.23,
+    "throughputRecordsPerSec": 2875.07,
     "timing": {
-      "exactMs": 0.472,
-      "fuzzyMs": 15.713,
-      "splitMs": 0.829,
-      "llmMs": 0.308,
-      "totalMs": 20.381
+      "exactMs": 0.602,
+      "fuzzyMs": 11.544,
+      "splitMs": 0.692,
+      "llmMs": 29.677,
+      "totalMs": 43.825
     },
     "matchSourceBreakdown": {
       "exact": 22,
@@ -78,6 +78,24 @@
         "correctlyDeferred": 15,
         "deferredTotal": 15,
         "notes": "correctly flagged as exception"
+      }
+    },
+    "llmAblation": {
+      "providerAvailable": false,
+      "withLlm": {
+        "matchRate": 0.9130434782608695,
+        "precision": 0.9767441860465116,
+        "recall": 0.9130434782608695,
+        "falsePositiveRate": 0.023255813953488372,
+        "llmMatches": 0,
+        "provider": "none"
+      },
+      "withoutLlm": {
+        "matchRate": 0.9130434782608695,
+        "precision": 0.9767441860465116,
+        "recall": 0.9130434782608695,
+        "falsePositiveRate": 0.023255813953488372,
+        "llmMatches": 0
       }
     }
   },

@@ -1,9 +1,61 @@
-import { useEffect, useMemo, useState, Fragment } from "react";
-import type { Exception, FullReport, MatchResult } from "./types";
+import { useCallback, useEffect, useMemo, useState, Fragment } from "react";
+import type {
+  AmbiguityLevel,
+  Exception,
+  FullReport,
+  MatchResult,
+} from "./types";
 import { pct } from "./types";
 import "./App.css";
 
 type Tab = "exceptions" | "matches";
+
+type PendingCorrection = {
+  recordId: string;
+  source: string;
+  decision: "accept" | "reject";
+  correctedMatchId?: string;
+};
+
+const DIFFICULTY_META: Record<
+  AmbiguityLevel,
+  { title: string; subtitle: string }
+> = {
+  clear: {
+    title: "Clear cases",
+    subtitle: "Exact / easy fuzzy",
+  },
+  boundary: {
+    title: "Boundary cases",
+    subtitle: "At fuzzy threshold edge",
+  },
+  decoy: {
+    title: "Decoy (correctly deferred)",
+    subtitle: "Should not auto-resolve",
+  },
+  unresolvable: {
+    title: "Unresolvable (correctly flagged)",
+    subtitle: "True noise / exceptions",
+  },
+};
+
+function findCounterpart(
+  row: Exception,
+  exceptions: Exception[],
+): string | undefined {
+  const sameReason = exceptions.filter(
+    (e) =>
+      e.reason === row.reason &&
+      e.recordId !== row.recordId &&
+      e.source !== row.source,
+  );
+  if (sameReason.length === 0) return undefined;
+  const digits = row.recordId.replace(/\D/g, "");
+  const byDigits = sameReason.find(
+    (e) => e.recordId.replace(/\D/g, "") === digits,
+  );
+  return (byDigits ?? sameReason[0])?.recordId;
+}
 
 export default function App() {
   const [report, setReport] = useState<FullReport | null>(null);
@@ -13,16 +65,26 @@ export default function App() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
   const [sortKey, setSortKey] = useState<"source" | "type">("source");
+  const [pending, setPending] = useState<Record<string, PendingCorrection>>({});
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [rerunning, setRerunning] = useState(false);
 
-  useEffect(() => {
-    fetch("/report.json")
+  const loadReport = useCallback(() => {
+    return fetch(`/report.json?t=${Date.now()}`)
       .then((r) => {
-        if (!r.ok) throw new Error("Missing report.json — run npm run reconcile first");
+        if (!r.ok)
+          throw new Error("Missing report.json — run npm run reconcile first");
         return r.json();
       })
-      .then((data: FullReport) => setReport(data))
-      .catch((e: Error) => setError(e.message));
+      .then((data: FullReport) => {
+        setReport(data);
+        setError(null);
+      });
   }, []);
+
+  useEffect(() => {
+    loadReport().catch((e: Error) => setError(e.message));
+  }, [loadReport]);
 
   const filteredExceptions = useMemo(() => {
     if (!report) return [];
@@ -43,7 +105,9 @@ export default function App() {
     if (!report) return [];
     return [
       ...new Set(
-        report.exceptions.map((e) => e.exceptionType ?? e.source).filter(Boolean),
+        report.exceptions
+          .map((e) => e.exceptionType ?? e.source)
+          .filter(Boolean),
       ),
     ];
   }, [report]);
@@ -52,16 +116,72 @@ export default function App() {
     row: Exception,
     decision: "accept" | "reject",
   ) {
-    await fetch("/api/corrections", {
+    const key = `${row.source}:${row.recordId}`;
+    const correctedMatchId =
+      decision === "accept"
+        ? findCounterpart(row, report?.exceptions ?? [])
+        : undefined;
+
+    const res = await fetch("/api/corrections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         recordId: row.recordId,
         source: row.source,
         decision,
+        correctedMatchId,
+        score: 0.7,
       }),
     });
-    alert(`Recorded ${decision} for ${row.recordId}`);
+    if (!res.ok) {
+      setStatusMsg(`Failed to write correction for ${row.recordId}`);
+      return;
+    }
+    setPending((prev) => ({
+      ...prev,
+      [key]: {
+        recordId: row.recordId,
+        source: row.source,
+        decision,
+        correctedMatchId,
+      },
+    }));
+    setStatusMsg(
+      decision === "accept"
+        ? `${row.recordId} accepted — will resolve as human match on next run`
+        : `${row.recordId} rejected — stays exception on next run`,
+    );
+  }
+
+  async function rerunWithCorrections() {
+    setRerunning(true);
+    setStatusMsg("Re-running reconcile with --apply-corrections…");
+    try {
+      const res = await fetch("/api/rerun", { method: "POST" });
+      const body = (await res.json()) as {
+        ok: boolean;
+        error?: string;
+        human?: number;
+      };
+      if (!res.ok || !body.ok) {
+        setStatusMsg(
+          body.error ??
+            "Re-run failed. From the project root run: npm run reconcile -- --seed 42 --skip-llm --apply-corrections",
+        );
+        return;
+      }
+      await loadReport();
+      setPending({});
+      setStatusMsg(
+        `Re-run complete — human matches in breakdown: ${body.human ?? "?"}`,
+      );
+    } catch {
+      setStatusMsg(
+        "Re-run API unavailable. Run: npm run reconcile -- --seed 42 --skip-llm --apply-corrections",
+      );
+    } finally {
+      setRerunning(false);
+    }
   }
 
   if (error) {
@@ -90,6 +210,8 @@ export default function App() {
     breakdown.llm,
     breakdown.human,
   );
+  const byLevel = m.byAmbiguityLevel;
+  const pendingCount = Object.keys(pending).length;
 
   return (
     <div className="shell">
@@ -114,8 +236,101 @@ export default function App() {
         />
       </section>
 
+      {byLevel && (
+        <section className="panel difficulty" aria-label="Accuracy by difficulty">
+          <div className="panel-head">
+            <h2>Accuracy by case difficulty</h2>
+            <p className="panel-note">
+              One number is not enough — this is where the system is actually
+              being tested.
+            </p>
+          </div>
+          <div className="difficulty-grid">
+            {(
+              [
+                "clear",
+                "boundary",
+                "decoy",
+                "unresolvable",
+              ] as AmbiguityLevel[]
+            ).map((level) => {
+              const slice = byLevel[level];
+              const meta = DIFFICULTY_META[level];
+              if (!slice) return null;
+              const deferred =
+                slice.deferredTotal != null && slice.deferredTotal > 0
+                  ? `${slice.correctlyDeferred ?? 0}/${slice.deferredTotal}`
+                  : null;
+              return (
+                <div className={`diff-card diff-${level}`} key={level}>
+                  <h3>{meta.title}</h3>
+                  <p className="diff-sub">{meta.subtitle}</p>
+                  {level === "decoy" || level === "unresolvable" ? (
+                    <p className="diff-main">
+                      correctly deferred: <strong>{deferred ?? "—"}</strong>
+                    </p>
+                  ) : (
+                    <>
+                      <p className="diff-main">
+                        match rate <strong>{pct(slice.matchRate)}</strong>
+                      </p>
+                      <p className="diff-sec">
+                        precision {pct(slice.precision)}
+                      </p>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {m.llmAblation && (
+        <section className="panel" aria-label="LLM impact">
+          <h2>LLM impact</h2>
+          {!m.llmAblation.providerAvailable && (
+            <p className="panel-note">
+              No LLM provider available for this report — both columns fell back
+              to none. Set <code>ANTHROPIC_API_KEY</code> or run Ollama, then{" "}
+              <code>npm run reconcile -- --seed 42 --compare-llm</code>.
+            </p>
+          )}
+          <div className="ablation-grid">
+            <div>
+              <h3>With LLM ({m.llmAblation.withLlm.provider})</h3>
+              <p>Recall {pct(m.llmAblation.withLlm.recall)}</p>
+              <p>Precision {pct(m.llmAblation.withLlm.precision)}</p>
+              <p>LLM matches {m.llmAblation.withLlm.llmMatches}</p>
+            </div>
+            <div>
+              <h3>Without LLM</h3>
+              <p>Recall {pct(m.llmAblation.withoutLlm.recall)}</p>
+              <p>Precision {pct(m.llmAblation.withoutLlm.precision)}</p>
+              <p>LLM matches {m.llmAblation.withoutLlm.llmMatches}</p>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="panel">
-        <h2>Match source</h2>
+        <div className="panel-head row">
+          <h2>Match source</h2>
+          <button
+            className="btn primary"
+            disabled={rerunning}
+            onClick={() => void rerunWithCorrections()}
+          >
+            {rerunning ? "Re-running…" : "Re-run with corrections"}
+          </button>
+        </div>
+        {statusMsg && <p className="status-msg">{statusMsg}</p>}
+        {pendingCount > 0 && (
+          <p className="panel-note">
+            {pendingCount} correction(s) queued — re-run to apply as human
+            matches.
+          </p>
+        )}
         <div className="bars">
           {(
             [
@@ -198,28 +413,37 @@ export default function App() {
               {filteredExceptions.map((e) => {
                 const key = `${e.source}:${e.recordId}`;
                 const open = expanded === key;
+                const queued = pending[key];
                 return (
                   <Fragment key={key}>
                     <tr
-                      className="clickable"
+                      className={`clickable ${queued ? "row-pending" : ""}`}
                       onClick={() => setExpanded(open ? null : key)}
                     >
                       <td>{e.recordId}</td>
                       <td>{e.source}</td>
                       <td>{e.exceptionType ?? "—"}</td>
                       <td onClick={(ev) => ev.stopPropagation()}>
-                        <button
-                          className="btn accept"
-                          onClick={() => sendCorrection(e, "accept")}
-                        >
-                          Accept
-                        </button>
-                        <button
-                          className="btn reject"
-                          onClick={() => sendCorrection(e, "reject")}
-                        >
-                          Reject
-                        </button>
+                        {queued ? (
+                          <span className="pending-tag">
+                            resolved — pending re-run ({queued.decision})
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              className="btn accept"
+                              onClick={() => void sendCorrection(e, "accept")}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              className="btn reject"
+                              onClick={() => void sendCorrection(e, "reject")}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                     {open && (

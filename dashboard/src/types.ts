@@ -1,3 +1,37 @@
+export type AmbiguityLevel = "clear" | "boundary" | "decoy" | "unresolvable";
+
+export interface AmbiguitySlice {
+  matchRate: number;
+  precision: number;
+  recall: number;
+  trueMatchCount: number;
+  predictedMatchCount: number;
+  truePositive: number;
+  falsePositive: number;
+  correctlyDeferred?: number;
+  deferredTotal?: number;
+  notes: string;
+}
+
+export interface LlmAblation {
+  providerAvailable: boolean;
+  withLlm: {
+    matchRate: number;
+    precision: number;
+    recall: number;
+    falsePositiveRate: number;
+    llmMatches: number;
+    provider: string;
+  };
+  withoutLlm: {
+    matchRate: number;
+    precision: number;
+    recall: number;
+    falsePositiveRate: number;
+    llmMatches: number;
+  };
+}
+
 export interface ScoreReport {
   matchRate: number;
   precision: number;
@@ -10,7 +44,6 @@ export interface ScoreReport {
     fuzzyMs: number;
     splitMs: number;
     llmMs: number;
-    totalMs: number;
   };
   matchSourceBreakdown: {
     exact: number;
@@ -25,6 +58,8 @@ export interface ScoreReport {
   seed: number;
   llmEnabled: boolean;
   llmProvider?: string;
+  byAmbiguityLevel?: Record<AmbiguityLevel, AmbiguitySlice>;
+  llmAblation?: LlmAblation;
 }
 
 export interface MatchResult {
