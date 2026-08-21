@@ -1,0 +1,21 @@
+{
+  "name": "finance-controller",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-source bank vs ledger reconciliation agent",
+  "scripts": {
+    "reconcile": "tsx src/cli.ts",
+    "generate": "tsx src/cli.ts --generate-only",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  }
+}
