@@ -25,16 +25,29 @@ Outputs:
 | --- | --- |
 | `--seed <n>` | Reproducible synthetic batch (default `42`) |
 | `--generate-only` | Write data files and exit |
-| `--skip-llm` | Never call the LLM |
+| `--skip-llm` | Force no LLM |
+| `--llm-provider <…>` | `anthropic` \| `ollama` \| `none` |
+| `--llm-model <name>` | Ollama model name (default `llama3.2`) |
+| `--apply-corrections` | Apply human corrections from `output/corrections.json` |
 
-### Optional LLM pass
+### Optional LLM pass (BYOK / local)
+
+Selection order: `--llm-provider` → `ANTHROPIC_API_KEY` → Ollama at `localhost:11434` → none.
 
 ```bash
+# No key required — skip LLM entirely
+npm run reconcile -- --seed 42 --skip-llm
+
+# Anthropic BYOK
 export ANTHROPIC_API_KEY=sk-ant-...
-npm run reconcile -- --seed 42
+npm run reconcile -- --seed 42 --llm-provider anthropic
+
+# Local Ollama (zero cloud cost)
+ollama serve   # separate terminal
+npm run reconcile -- --seed 42 --llm-provider ollama --llm-model llama3.2
 ```
 
-Without a key, ambiguous rows become exceptions with reason `ambiguous — LLM unavailable`.
+Before any calls the CLI prints: `LLM pass: N ambiguous pairs, provider=<x>, est. calls=N`.
 
 ## Metrics (never blended)
 

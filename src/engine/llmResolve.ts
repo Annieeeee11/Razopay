@@ -1,9 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type {
   AmbiguousCandidate,
   Exception,
   MatchResult,
 } from "../data/types.js";
+import { AnthropicProvider } from "./providers/anthropic.js";
+import { isOllamaReachable, OllamaProvider } from "./providers/ollama.js";
+import type { LlmProvider } from "./providers/types.js";
 
 export interface LlmResolveResult {
   matches: MatchResult[];
@@ -12,45 +14,61 @@ export interface LlmResolveResult {
   providerName: string;
 }
 
-interface LlmVerdict {
-  verdict: "match" | "no_match" | "unsure";
-  reasoning: string;
-}
+export type LlmProviderChoice = "anthropic" | "ollama" | "none";
 
-const SYSTEM_PROMPT = `You are a payment gateway settlement reconciliation assistant. Given one bank payout credit and one settlement record, decide if they represent the same underlying payout (matched on UTR / net amount).
-Respond with ONLY valid JSON: {"verdict":"match"|"no_match"|"unsure","reasoning":"<one short sentence>"}.
-Use "unsure" when evidence is insufficient — do not force a match.`;
-
-function parseVerdict(text: string): LlmVerdict {
-  const trimmed = text.trim();
-  const jsonStart = trimmed.indexOf("{");
-  const jsonEnd = trimmed.lastIndexOf("}");
-  if (jsonStart === -1 || jsonEnd === -1) {
-    return { verdict: "unsure", reasoning: "LLM returned non-JSON response" };
+export async function selectLlmProvider(options: {
+  skipLlm?: boolean;
+  llmProvider?: LlmProviderChoice;
+  llmModel?: string;
+}): Promise<{ provider: LlmProvider | null; name: string }> {
+  if (options.skipLlm || options.llmProvider === "none") {
+    return { provider: null, name: "none" };
   }
-  try {
-    const parsed = JSON.parse(
-      trimmed.slice(jsonStart, jsonEnd + 1),
-    ) as Partial<LlmVerdict>;
-    const verdict = parsed.verdict;
-    if (verdict !== "match" && verdict !== "no_match" && verdict !== "unsure") {
-      return { verdict: "unsure", reasoning: "LLM verdict unparseable" };
+
+  if (options.llmProvider === "anthropic") {
+    const key = process.env.ANTHROPIC_API_KEY;
+    if (!key) {
+      console.warn("Requested anthropic provider but ANTHROPIC_API_KEY missing.");
+      return { provider: null, name: "none" };
+    }
+    return { provider: new AnthropicProvider(key), name: "anthropic" };
+  }
+
+  if (options.llmProvider === "ollama") {
+    if (!(await isOllamaReachable())) {
+      console.warn("Requested ollama provider but localhost:11434 unreachable.");
+      return { provider: null, name: "none" };
     }
     return {
-      verdict,
-      reasoning: parsed.reasoning?.trim() || "LLM provided no reasoning",
+      provider: new OllamaProvider(options.llmModel ?? "llama3.2"),
+      name: "ollama",
     };
-  } catch {
-    return { verdict: "unsure", reasoning: "LLM returned invalid JSON" };
   }
+
+  // Auto-select: Anthropic key > Ollama reachable > none
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (key) {
+    return { provider: new AnthropicProvider(key), name: "anthropic" };
+  }
+  if (await isOllamaReachable()) {
+    return {
+      provider: new OllamaProvider(options.llmModel ?? "llama3.2"),
+      name: "ollama",
+    };
+  }
+  return { provider: null, name: "none" };
 }
 
 /**
- * Phase 1 LLM pass (Anthropic only). Phase 2 adds provider interface.
+ * Resolve only the ambiguous bucket via the selected LLM provider.
  */
 export async function llmResolve(
   ambiguous: AmbiguousCandidate[],
-  options: { skipLlm?: boolean } = {},
+  options: {
+    skipLlm?: boolean;
+    llmProvider?: LlmProviderChoice;
+    llmModel?: string;
+  } = {},
 ): Promise<LlmResolveResult> {
   const matches: MatchResult[] = [];
   const exceptions: Exception[] = [];
@@ -59,8 +77,13 @@ export async function llmResolve(
     return { matches, exceptions, enabled: false, providerName: "none" };
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (options.skipLlm || !apiKey) {
+  const { provider, name } = await selectLlmProvider(options);
+
+  console.log(
+    `LLM pass: ${ambiguous.length} ambiguous pairs, provider=${name}, est. calls=${ambiguous.length}`,
+  );
+
+  if (!provider) {
     for (const a of ambiguous) {
       exceptions.push({
         recordId: a.bank.id,
@@ -76,37 +99,9 @@ export async function llmResolve(
     return { matches, exceptions, enabled: false, providerName: "none" };
   }
 
-  console.log(
-    `LLM pass: ${ambiguous.length} ambiguous pairs, provider=anthropic, est. calls=${ambiguous.length}`,
-  );
-
-  const client = new Anthropic({ apiKey });
-
   for (const a of ambiguous) {
-    const userContent = JSON.stringify(
-      {
-        bankCredit: a.bank,
-        settlement: a.settlement,
-        deterministicScore: a.score,
-        deterministicReason: a.reasoning,
-      },
-      null,
-      2,
-    );
-
     try {
-      const response = await client.messages.create({
-        model: "claude-3-5-haiku-latest",
-        max_tokens: 200,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userContent }],
-      });
-
-      const text = response.content
-        .filter((b) => b.type === "text")
-        .map((b) => b.text)
-        .join("\n");
-      const verdict = parseVerdict(text);
+      const verdict = await provider.resolve(a);
 
       if (verdict.verdict === "match") {
         matches.push({
@@ -154,5 +149,5 @@ export async function llmResolve(
     }
   }
 
-  return { matches, exceptions, enabled: true, providerName: "anthropic" };
+  return { matches, exceptions, enabled: true, providerName: name };
 }

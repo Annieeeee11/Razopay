@@ -3,7 +3,9 @@ import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateAndWrite } from "./data/generate.js";
+import type { ReconcileConfig } from "./data/types.js";
 import { reconcile } from "./engine/reconcile.js";
+import type { LlmProviderChoice } from "./engine/llmResolve.js";
 import { scoreAgainstGroundTruth } from "./scoring/metrics.js";
 import {
   KNOWN_LIMITATIONS,
@@ -17,10 +19,16 @@ function parseArgs(argv: string[]): {
   seed: number;
   generateOnly: boolean;
   skipLlm: boolean;
+  llmProvider?: LlmProviderChoice;
+  llmModel: string;
+  applyCorrections: boolean;
 } {
   let seed = 42;
   let generateOnly = false;
   let skipLlm = false;
+  let llmProvider: LlmProviderChoice | undefined;
+  let llmModel = "llama3.2";
+  let applyCorrections = false;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -37,13 +45,26 @@ function parseArgs(argv: string[]): {
       generateOnly = true;
     } else if (arg === "--skip-llm") {
       skipLlm = true;
+      llmProvider = "none";
+    } else if (arg === "--llm-provider") {
+      const next = argv[++i];
+      if (next !== "anthropic" && next !== "ollama" && next !== "none") {
+        throw new Error("--llm-provider must be anthropic|ollama|none");
+      }
+      llmProvider = next;
+    } else if (arg === "--llm-model") {
+      const next = argv[++i];
+      if (!next) throw new Error("--llm-model requires a value");
+      llmModel = next;
+    } else if (arg === "--apply-corrections") {
+      applyCorrections = true;
     } else if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
     }
   }
 
-  return { seed, generateOnly, skipLlm };
+  return { seed, generateOnly, skipLlm, llmProvider, llmModel, applyCorrections };
 }
 
 function printHelp(): void {
@@ -53,10 +74,14 @@ Razorpay-style payment gateway settlement reconciliation
 (Payment → Settlement → Bank payout credit via UTR).
 
 Options:
-  --seed <n>         Seeded RNG for reproducible synthetic data (default: 42)
-  --generate-only    Write data/*.json and exit
-  --skip-llm         Skip LLM pass even if ANTHROPIC_API_KEY is set
-  -h, --help         Show help
+  --seed <n>                      Seeded RNG (default: 42)
+  --generate-only                 Write data/*.json and exit
+  --skip-llm                      Force no LLM (same as --llm-provider none)
+  --llm-provider <anthropic|ollama|none>
+                                  Explicit provider (else: API key → Ollama → none)
+  --llm-model <name>              Ollama model (default: llama3.2)
+  --apply-corrections             Apply output/corrections.json overrides
+  -h, --help                      Show help
 `);
 }
 
@@ -68,7 +93,14 @@ function copyReportToDashboard(jsonPath: string): void {
 }
 
 async function main(): Promise<void> {
-  const { seed, generateOnly, skipLlm } = parseArgs(process.argv.slice(2));
+  const {
+    seed,
+    generateOnly,
+    skipLlm,
+    llmProvider,
+    llmModel,
+    applyCorrections,
+  } = parseArgs(process.argv.slice(2));
 
   console.log(`Generating synthetic settlement dataset (seed=${seed})...`);
   const dataset = generateAndWrite(seed);
@@ -81,23 +113,30 @@ async function main(): Promise<void> {
     return;
   }
 
-  const llmWouldRun = Boolean(process.env.ANTHROPIC_API_KEY) && !skipLlm;
-  console.log(
-    `Reconciling (LLM ${llmWouldRun ? "enabled" : "disabled"})...`,
-  );
+  const cfg: Partial<ReconcileConfig> = {
+    skipLlm,
+    llmProvider,
+    llmModel,
+    applyCorrections,
+  };
 
+  console.log("Reconciling...");
   const result = await reconcile(
     dataset.payments,
     dataset.settlements,
     dataset.bankCredits,
-    { skipLlm },
+    cfg,
   );
+
+  // Provider name inferred from whether LLM matches/exceptions mention LLM
+  const llmEnabled = result.timing.llmMs > 0 && !skipLlm && llmProvider !== "none";
+
   const metrics = scoreAgainstGroundTruth(
     result,
     dataset.groundTruth,
     seed,
-    llmWouldRun,
-    llmWouldRun ? "anthropic" : "none",
+    llmEnabled,
+    llmProvider ?? (process.env.ANTHROPIC_API_KEY ? "anthropic" : "auto"),
   );
 
   const full: FullReport = {

@@ -82,7 +82,11 @@ export async function reconcile(
   });
 
   const t2 = performance.now();
-  const pass3 = await llmResolve(pass2.ambiguous, { skipLlm: cfg.skipLlm });
+  const pass3 = await llmResolve(pass2.ambiguous, {
+    skipLlm: cfg.skipLlm,
+    llmProvider: cfg.llmProvider,
+    llmModel: cfg.llmModel,
+  });
   const llmMs = performance.now() - t2;
 
   const matches: MatchResult[] = [

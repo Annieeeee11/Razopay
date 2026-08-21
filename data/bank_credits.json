@@ -1,0 +1,366 @@
+[
+  {
+    "id": "bank_0001",
+    "utr": "UTR0000015XFSJV",
+    "creditedAmount": 2232.51,
+    "creditedAt": "2025-02-24",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0002",
+    "utr": "UTR0000026ZKGSX",
+    "creditedAmount": 1291.64,
+    "creditedAt": "2025-02-12",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0003",
+    "utr": "UTR0000034BUBJB",
+    "creditedAmount": 2358.96,
+    "creditedAt": "2025-01-01",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0004",
+    "utr": "UTR000004AF4R3L",
+    "creditedAmount": 2636.55,
+    "creditedAt": "2025-03-13",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0005",
+    "utr": "UTR000005TVHWGK",
+    "creditedAmount": 342.52,
+    "creditedAt": "2025-01-04",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0006",
+    "utr": "UTR000006GKKCXX",
+    "creditedAmount": 2522.18,
+    "creditedAt": "2025-03-20",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0007",
+    "utr": "UTR0000078P8EDA",
+    "creditedAmount": 519.38,
+    "creditedAt": "2025-03-26",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0008",
+    "utr": "UTR0000086CZ7JY",
+    "creditedAmount": 3037.01,
+    "creditedAt": "2025-02-13",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0009",
+    "utr": "UTR000009D9U7PU",
+    "creditedAmount": 4037.8,
+    "creditedAt": "2025-02-17",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0010",
+    "utr": "UTR000010ZKQ4Y9",
+    "creditedAmount": 1635.04,
+    "creditedAt": "2025-02-24",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0011",
+    "utr": "UTR000011KDYL36",
+    "creditedAmount": 2719.42,
+    "creditedAt": "2025-02-09",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0012",
+    "utr": "UTR000012E9FYYH",
+    "creditedAmount": 4034.4,
+    "creditedAt": "2025-02-13",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0013",
+    "utr": "UTR000013LGW6L3",
+    "creditedAmount": 3233.98,
+    "creditedAt": "2025-01-15",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0014",
+    "utr": "UTR000014MAZW67",
+    "creditedAmount": 4244.77,
+    "creditedAt": "2025-01-12",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0015",
+    "utr": "UTR000015FBYYKJ",
+    "creditedAmount": 2443.16,
+    "creditedAt": "2025-02-24",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0016",
+    "utr": "UTR0000169U9FFT",
+    "creditedAmount": 1157.39,
+    "creditedAt": "2025-01-03",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0017",
+    "utr": "UTR000017PXNL6L",
+    "creditedAmount": 2176.14,
+    "creditedAt": "2025-02-05",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0018",
+    "utr": "UTR000018UHLKLX",
+    "creditedAmount": 2720.78,
+    "creditedAt": "2025-02-25",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0019",
+    "utr": "UTR000019LDLBUG",
+    "creditedAmount": 3423.47,
+    "creditedAt": "2025-01-16",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0020",
+    "utr": "UTR00002073QE5S",
+    "creditedAmount": 3489.92,
+    "creditedAt": "2025-02-04",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0021",
+    "utr": "UTR000021EV3GNT",
+    "creditedAmount": 2237.91,
+    "creditedAt": "2025-03-23",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0022",
+    "utr": "UTR0000224ZBCFS",
+    "creditedAmount": 4200.72,
+    "creditedAt": "2025-02-14",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0023",
+    "utr": "UTR0000234W45VM",
+    "creditedAmount": 4844.23,
+    "creditedAt": "2025-03-11",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0024",
+    "utr": "UTR000024WL5EMA",
+    "creditedAmount": 4606.09,
+    "creditedAt": "2025-02-01",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0025",
+    "utr": "UTR000025QYEJEB",
+    "creditedAmount": 4316.2,
+    "creditedAt": "2025-03-28",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0026",
+    "utr": "UTR0000263GXSQR",
+    "creditedAmount": 3896.29,
+    "creditedAt": "2025-03-07",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0027",
+    "utr": "UTR000027SJSTWP",
+    "creditedAmount": 807.58,
+    "creditedAt": "2025-01-28",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0028",
+    "utr": "UTR0000285PSD4B",
+    "creditedAmount": 429.86,
+    "creditedAt": "2025-03-27",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0029",
+    "utr": "UTR00002982X3T3",
+    "creditedAmount": 550.14,
+    "creditedAt": "2025-02-21",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0030",
+    "utr": "UTR000030JXXT9A",
+    "creditedAmount": 381.11,
+    "creditedAt": "2025-01-09",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0031",
+    "utr": "UTR000031G88JS5",
+    "creditedAmount": 2664.73,
+    "creditedAt": "2025-03-17",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0032",
+    "utr": "UTR000032R2TXTT",
+    "creditedAmount": 1589.48,
+    "creditedAt": "2025-03-15",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0033",
+    "utr": "UTR000033X5N6L6",
+    "creditedAmount": 3106.66,
+    "creditedAt": "2025-01-29",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0034",
+    "utr": "UTR0000345YEK8R",
+    "creditedAmount": 3077.64,
+    "creditedAt": "2025-03-18",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0035",
+    "utr": "UTR000035F56TRC",
+    "creditedAmount": 3517.65,
+    "creditedAt": "2025-03-09",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0036",
+    "utr": "UTR000036VYSBFD",
+    "creditedAmount": 2226.23,
+    "creditedAt": "2025-02-08",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0037",
+    "utr": "UTR000037XCBJYJ",
+    "creditedAmount": 4088.58,
+    "creditedAt": "2025-03-17",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0038",
+    "utr": "UTR000038MDWHRJ",
+    "creditedAmount": 4359.43,
+    "creditedAt": "2025-03-24",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0039",
+    "utr": "UTR000039D3Y7DB",
+    "creditedAmount": 2946.16,
+    "creditedAt": "2025-02-14",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0040",
+    "utr": "UTR0000409U4LWB",
+    "creditedAmount": 1194.31,
+    "creditedAt": "2025-01-22",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0041",
+    "utr": "UTR0000409U4LWB",
+    "creditedAmount": 1194.31,
+    "creditedAt": "2025-01-22",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0042",
+    "utr": "UTR000041G3SEC2",
+    "creditedAmount": 1897.55,
+    "creditedAt": "2025-03-14",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0043",
+    "utr": "UTR000041G3SEC2",
+    "creditedAmount": 1897.55,
+    "creditedAt": "2025-03-14",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0044",
+    "utr": "UTR000042R8FETX",
+    "creditedAmount": 3901.22,
+    "creditedAt": "2025-03-21",
+    "currency": "USD"
+  },
+  {
+    "id": "bank_0045",
+    "utr": "UTR000043EXVTG7",
+    "creditedAmount": 1251.76,
+    "creditedAt": "2025-03-12",
+    "currency": "USD"
+  },
+  {
+    "id": "bank_0046",
+    "utr": "UTR0000516QBURQ",
+    "creditedAmount": 3056.05,
+    "creditedAt": "2025-01-26",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0047",
+    "utr": "UTR000052YV84RA",
+    "creditedAmount": 674.78,
+    "creditedAt": "2025-03-10",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0048",
+    "utr": "UTR000053RXTV5X",
+    "creditedAmount": 2551.74,
+    "creditedAt": "2025-01-06",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0049",
+    "utr": "UTR000054383FC9",
+    "creditedAmount": 4751.27,
+    "creditedAt": "2025-03-31",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0050",
+    "utr": "UTR000055X2L4Q7",
+    "creditedAmount": 338.59,
+    "creditedAt": "2025-02-16",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0051",
+    "utr": "UTR0000569P3ZAX",
+    "creditedAmount": 1007.33,
+    "creditedAt": "2025-02-05",
+    "currency": "INR"
+  },
+  {
+    "id": "bank_0052",
+    "utr": "UTR0000579FVCW3",
+    "creditedAmount": 1711.56,
+    "creditedAt": "2025-02-14",
+    "currency": "INR"
+  }
+]
