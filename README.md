@@ -115,3 +115,11 @@ npm run check-baseline
 - Near-dup / boundary cases need LLM or human for full recall
 - On the Ollama `llama3.2` ablation run (seed 42), the model correctly matched 2 of 4 residual true pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`) citing amount + UTR signals, but incorrectly rejected the other two true near-dup pairs (`bank_0040`/`setl_0040`, `bank_0041`/`setl_0042`) as `no_match` because truncated UTRs were not treated as prefixes — leaving those as false negatives
 - Local LLM output is nondeterministic: a follow-up run with the same seed/model resolved a different 3 of 4 residual pairs (recall 97.83% in `output/report.json` used by the dashboard) while rejecting `bank_0042`/`setl_0044` on the same truncated-UTR rationale — not cherry-picked across re-runs
+
+## What broke, and what we did about it
+
+**The first version scored a perfect 100%.** Seed 42 came back with 100% match rate / precision / recall and 0% false positives, and the LLM and human tiers never fired. On a track that penalizes cherry-picked wins, that was a red flag about the data, not a win for the engine. We rebuilt the generator with near-duplicate decoys, boundary UTR mangles at the fuzzy threshold, and split batches with a coincidental decoy sum. The skip-llm baseline is now **97.67% precision / 91.30% recall / 2.33% FP** — lower, but honest, and the residual tiers have real work.
+
+**The first LLM ablation was a no-op.** `--compare-llm` printed identical columns because both sides silently fell back to provider `none`. We re-ran against local Ollama (`llama3.2`): recall rose from **91.30% → 95.65%**, correctly resolving **2 of 4** ambiguous pairs; the two false `no_match` verdicts are disclosed under Known Limitations rather than hidden.
+
+Catching a perfect score and a flat ablation as non-results was the same judgment call as the metrics themselves: treat suspiciously clean output as a failure mode until the residual tiers have something real to resolve.
