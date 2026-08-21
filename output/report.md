@@ -3,29 +3,29 @@
 Razorpay-style 3-way flow: **Payment → Settlement → Bank payout credit** (UTR join).
 
 Seed: `42` · Payments: 69 · Settlements: 69 · Bank credits: 57
-LLM pass: enabled (ollama)
+LLM pass: disabled / unavailable
 
 ## Headline metrics
 
 | Metric | Value |
 | --- | --- |
-| Match rate (recall on true matches) | 97.83% |
-| Precision | 97.83% |
-| Recall | 97.83% |
-| False positive rate | 2.17% |
-| Exception accuracy | 92.31% |
-| Throughput | 9.57 records/sec |
-| Runtime (total) | 13166.79 ms |
+| Match rate (recall on true matches) | 91.30% |
+| Precision | 97.67% |
+| Recall | 91.30% |
+| False positive rate | 2.33% |
+| Exception accuracy | 75.00% |
+| Throughput | 8811.19 records/sec |
+| Runtime (total) | 14.30 ms |
 
 ### Counts
 
 - True matches in ground truth: 46
-- Predicted matches: 46
-- True positives: 45
+- Predicted matches: 43
+- True positives: 42
 - False positives: 1
-- False negatives: 1
+- False negatives: 4
 - True exception records: 30
-- Predicted exception records: 26
+- Predicted exception records: 32
 - Correctly flagged exceptions: 24
 
 ## Match-source breakdown
@@ -35,24 +35,24 @@ LLM pass: enabled (ollama)
 | Exact | 22 |
 | Fuzzy | 18 |
 | Split | 3 |
-| LLM | 3 |
+| LLM | 0 |
 | Human | 0 |
 
 | Pass timing | ms |
 | --- | ---: |
-| Exact | 0.92 |
-| Fuzzy | 19.63 |
-| Split | 1.06 |
-| LLM | 13104.08 |
-| Total | 13166.79 |
+| Exact | 0.39 |
+| Fuzzy | 11.72 |
+| Split | 0.68 |
+| LLM | 0.27 |
+| Total | 14.30 |
 
 ## Accuracy by case difficulty
 
 | Difficulty | Match rate | Precision | Deferred | Notes |
 | --- | --- | --- | --- | --- |
 | Clear | 100.00% | 97.44% | — | trivial exact/fuzzy cases |
-| Boundary | 100.00% | 100.00% | — | at fuzzy threshold edge |
-| Decoy | 66.67% | 66.67% | 68.75% | correctly deferred, not auto-resolved to decoy |
+| Boundary | 80.00% | 100.00% | — | at fuzzy threshold edge |
+| Decoy | 0.00% | 0.00% | 68.75% | correctly deferred, not auto-resolved to decoy |
 | Unresolvable | — | — | 100.00% | correctly flagged as exception |
 
 ## Exception list
@@ -68,8 +68,14 @@ LLM pass: enabled (ollama)
 | setl_0067 | settlement | currency mismatch, not auto-resolved |
 | bank_0045 | bank | ambiguous split — multiple settlement combinations sum to credit: setl_0052+setl_0053 \| setl_0054+setl_0055 |
 | bank_0046 | bank | ambiguous split — multiple settlement combinations sum to credit: setl_0056+setl_0057 \| setl_0058+setl_0059 |
-| bank_0042 | bank | LLM verdict: no_match — UTR mismatch: UTR000042DYV84R != UTR000042D |
-| setl_0044 | settlement | LLM verdict: no_match — UTR mismatch: UTR000042DYV84R != UTR000042D |
+| bank_0039 | bank | ambiguous — LLM unavailable |
+| setl_0039 | settlement | ambiguous — LLM unavailable |
+| bank_0040 | bank | ambiguous — LLM unavailable |
+| setl_0040 | settlement | ambiguous — LLM unavailable |
+| bank_0041 | bank | ambiguous — LLM unavailable |
+| setl_0042 | settlement | ambiguous — LLM unavailable |
+| bank_0042 | bank | ambiguous — LLM unavailable |
+| setl_0044 | settlement | ambiguous — LLM unavailable |
 | bank_0047 | bank | no plausible counterpart in window |
 | bank_0048 | bank | no plausible counterpart in window |
 | bank_0051 | bank | no plausible counterpart in window |
