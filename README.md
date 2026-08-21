@@ -1,3 +1,7 @@
+<div align="center">
+  <img width="476" height="147" alt="image" src="https://github.com/user-attachments/assets/cb6a7870-c367-45c9-a050-988015c58bfc" />
+</div>
+
 # SettleSure: Payment Gateway Settlement Reconciliation
 
 ![Razorpay](https://img.shields.io/badge/Razorpay-072654?style=flat&logo=razorpay&logoColor=white)
@@ -15,6 +19,9 @@ This is a Razorpay-style 3-way settlement reconciliation: Payments → Settlemen
 2. `npm run dashboard` opens http://localhost:5173. You’ll see match rate, precision, recall, and FP rate by case difficulty, plus the full exception list with reasons.
 3. In the dashboard, click **Accept** on one ambiguous exception, then **Re-run with corrections**. The human-resolved count should move from 0 to 1+ in the match-source chart.
 4. `npm run reconcile -- --seed 42 --compare-llm --llm-provider ollama --llm-model llama3.2` shows what the LLM pass actually does to recall, side by side with LLM off (needs local Ollama).
+
+<img width="575" height="578" alt="image" src="https://github.com/user-attachments/assets/0aa1b20d-48ce-4e48-ab98-ea39dfa0c4d2" />
+
 
 ---
 
