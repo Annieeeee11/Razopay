@@ -1,7 +1,11 @@
 # SettleSure: Payment Gateway Settlement Reconciliation
 
-![CI](https://github.com/Annieeeee11/Razopay/actions/workflows/ci.yml/badge.svg)
+![Razorpay](https://img.shields.io/badge/Razorpay-072654?style=flat&logo=razorpay&logoColor=white)
+![CI](https://github.com/Annieeeee11/SettleSure/actions/workflows/ci.yml/badge.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![LLM agent](https://img.shields.io/badge/llm--agent-111827?style=flat&logo=openai&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=flat&logo=ollama&logoColor=white)
 
 This is a Razorpay-style 3-way settlement reconciliation: Payments → Settlements (gross/fee/tax/net + UTR) → Bank payout credits. Exact, fuzzy, and split matching handle most of the batch. The harder leftover cases (near-duplicates and UTRs mangled right at the fuzzy boundary) go to the LLM or a human.
 
