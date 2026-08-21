@@ -1,30 +1,30 @@
 {
   "metrics": {
-    "matchRate": 0.9318181818181818,
+    "matchRate": 1,
     "precision": 1,
-    "recall": 0.9318181818181818,
+    "recall": 1,
     "falsePositiveRate": 0,
-    "exceptionAccuracy": 0.6296296296296297,
+    "exceptionAccuracy": 1,
     "trueMatchCount": 44,
-    "predictedMatchCount": 41,
-    "truePositive": 41,
+    "predictedMatchCount": 44,
+    "truePositive": 44,
     "falsePositive": 0,
-    "falseNegative": 3,
+    "falseNegative": 0,
     "trueExceptionCount": 17,
-    "predictedExceptionCount": 27,
+    "predictedExceptionCount": 17,
     "correctlyFlaggedExceptions": 17,
-    "throughputRecordsPerSec": 8665.92,
+    "throughputRecordsPerSec": 6581.73,
     "timing": {
-      "exactMs": 0.288,
-      "fuzzyMs": 11.342,
-      "splitMs": 0,
-      "llmMs": 0.136,
-      "totalMs": 12.578
+      "exactMs": 0.564,
+      "fuzzyMs": 13.807,
+      "splitMs": 0.748,
+      "llmMs": 0.14,
+      "totalMs": 16.561
     },
     "matchSourceBreakdown": {
       "exact": 24,
       "fuzzy": 17,
-      "split": 0,
+      "split": 3,
       "llm": 0,
       "human": 0
     },
@@ -322,6 +322,40 @@
       "confidence": 0.775,
       "matchedBy": "fuzzy",
       "reasoning": "date off by 3d"
+    },
+    {
+      "bankCreditId": "bank_0050",
+      "settlementId": "setl_0051",
+      "components": [
+        "setl_0051",
+        "setl_0052"
+      ],
+      "confidence": 1,
+      "matchedBy": "split",
+      "reasoning": "Unique subset-sum: setl_0051 + setl_0052 = 338.59"
+    },
+    {
+      "bankCreditId": "bank_0051",
+      "settlementId": "setl_0053",
+      "components": [
+        "setl_0053",
+        "setl_0054"
+      ],
+      "confidence": 1,
+      "matchedBy": "split",
+      "reasoning": "Unique subset-sum: setl_0053 + setl_0054 = 1007.33"
+    },
+    {
+      "bankCreditId": "bank_0052",
+      "settlementId": "setl_0055",
+      "components": [
+        "setl_0055",
+        "setl_0056",
+        "setl_0057"
+      ],
+      "confidence": 1,
+      "matchedBy": "split",
+      "reasoning": "Unique subset-sum: setl_0055 + setl_0056 + setl_0057 = 1711.56"
     }
   ],
   "exceptions": [
@@ -344,18 +378,6 @@
       "exceptionType": "fee_tax_mismatch"
     },
     {
-      "recordId": "bank_0041",
-      "source": "bank",
-      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
-      "exceptionType": "unclaimed_bank_credit"
-    },
-    {
-      "recordId": "bank_0043",
-      "source": "bank",
-      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
-      "exceptionType": "unclaimed_bank_credit"
-    },
-    {
       "recordId": "bank_0044",
       "source": "bank",
       "reason": "currency mismatch, not auto-resolved",
@@ -366,6 +388,30 @@
       "source": "bank",
       "reason": "currency mismatch, not auto-resolved",
       "exceptionType": "currency_mismatch"
+    },
+    {
+      "recordId": "setl_0042",
+      "source": "settlement",
+      "reason": "currency mismatch, not auto-resolved",
+      "exceptionType": "currency_mismatch"
+    },
+    {
+      "recordId": "setl_0043",
+      "source": "settlement",
+      "reason": "currency mismatch, not auto-resolved",
+      "exceptionType": "currency_mismatch"
+    },
+    {
+      "recordId": "bank_0041",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
+    },
+    {
+      "recordId": "bank_0043",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
     },
     {
       "recordId": "bank_0046",
@@ -392,36 +438,6 @@
       "exceptionType": "unclaimed_bank_credit"
     },
     {
-      "recordId": "bank_0050",
-      "source": "bank",
-      "reason": "batched payout — awaiting split match",
-      "exceptionType": "batched_payout"
-    },
-    {
-      "recordId": "bank_0051",
-      "source": "bank",
-      "reason": "batched payout — awaiting split match",
-      "exceptionType": "batched_payout"
-    },
-    {
-      "recordId": "bank_0052",
-      "source": "bank",
-      "reason": "batched payout — awaiting split match",
-      "exceptionType": "batched_payout"
-    },
-    {
-      "recordId": "setl_0042",
-      "source": "settlement",
-      "reason": "currency mismatch, not auto-resolved",
-      "exceptionType": "currency_mismatch"
-    },
-    {
-      "recordId": "setl_0043",
-      "source": "settlement",
-      "reason": "currency mismatch, not auto-resolved",
-      "exceptionType": "currency_mismatch"
-    },
-    {
       "recordId": "setl_0047",
       "source": "settlement",
       "reason": "settlement present, bank credit missing (payout may be in transit)",
@@ -444,52 +460,11 @@
       "source": "settlement",
       "reason": "settlement present, bank credit missing (payout may be in transit)",
       "exceptionType": "settlement_pending_bank"
-    },
-    {
-      "recordId": "setl_0051",
-      "source": "settlement",
-      "reason": "settlement present, bank credit missing (payout may be in transit)",
-      "exceptionType": "settlement_pending_bank"
-    },
-    {
-      "recordId": "setl_0052",
-      "source": "settlement",
-      "reason": "settlement present, bank credit missing (payout may be in transit)",
-      "exceptionType": "settlement_pending_bank"
-    },
-    {
-      "recordId": "setl_0053",
-      "source": "settlement",
-      "reason": "settlement present, bank credit missing (payout may be in transit)",
-      "exceptionType": "settlement_pending_bank"
-    },
-    {
-      "recordId": "setl_0054",
-      "source": "settlement",
-      "reason": "settlement present, bank credit missing (payout may be in transit)",
-      "exceptionType": "settlement_pending_bank"
-    },
-    {
-      "recordId": "setl_0055",
-      "source": "settlement",
-      "reason": "settlement present, bank credit missing (payout may be in transit)",
-      "exceptionType": "settlement_pending_bank"
-    },
-    {
-      "recordId": "setl_0056",
-      "source": "settlement",
-      "reason": "settlement present, bank credit missing (payout may be in transit)",
-      "exceptionType": "settlement_pending_bank"
-    },
-    {
-      "recordId": "setl_0057",
-      "source": "settlement",
-      "reason": "settlement present, bank credit missing (payout may be in transit)",
-      "exceptionType": "settlement_pending_bank"
     }
   ],
   "knownLimitations": [
-    "1:1 settlement↔bank matching for non-batched rows; batched payouts are generated but not yet auto-resolved (Phase 4 split match pending).",
+    "Split matching uses bounded subset-sum (max pool 25, max combo 6) — demo-scale only.",
+    "Ambiguous multi-solution batches are not auto-resolved.",
     "No FX conversion — currency mismatches are never auto-resolved.",
     "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity only.",
     "Duplicate bank credits: first claim wins; extras become exceptions."

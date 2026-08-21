@@ -49,7 +49,17 @@ npm run reconcile -- --seed 42 --llm-provider ollama --llm-model llama3.2
 
 Before any calls the CLI prints: `LLM pass: N ambiguous pairs, provider=<x>, est. calls=N`.
 
-## Dashboard
+## Human corrections
+
+In the dashboard, Accept / Reject on exception rows writes `output/corrections.json`.
+Re-run with overrides:
+
+```bash
+npm run reconcile -- --seed 42 --skip-llm --apply-corrections
+```
+
+Accepted pairs become `matchedBy: human`. Rejected IDs stay permanent exceptions.
+If ≥3 accepts fall in score band 0.65–0.75, the report **logs** a suggested fuzzy threshold (never auto-applied).
 
 Local visualization over `output/report.json` (CLI remains source of truth):
 
@@ -77,6 +87,7 @@ npm test
 
 ## Known limitations
 
-- Batched payouts (one bank credit = sum of several settlement nets) are in the dataset but not auto-resolved yet
+- Split matching is bounded (pool ≤25, combo ≤6) for demo scale
+- Ambiguous multi-solution batches are not auto-picked
 - No FX conversion
-- 1:1 matching for non-batched rows
+- Duplicate bank credits: first claim wins
