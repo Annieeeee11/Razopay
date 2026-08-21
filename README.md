@@ -1,16 +1,16 @@
-# Razopay — Payment Gateway Settlement Reconciliation
+# Razopay: Payment Gateway Settlement Reconciliation
 
 ![CI](https://github.com/Annieeeee11/Razopay/actions/workflows/ci.yml/badge.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 
-Razorpay-shaped **3-way settlement reconciliation**: Payments → Settlements (gross/fee/tax/net + UTR) → Bank payout credits. Deterministic exact → fuzzy → split resolve most of the batch; adversarial near-duplicates and boundary UTR mangles feed the LLM/human residual.
+This is a Razorpay-style 3-way settlement reconciliation: Payments → Settlements (gross/fee/tax/net + UTR) → Bank payout credits. Exact, fuzzy, and split matching handle most of the batch. The harder leftover cases (near-duplicates and UTRs mangled right at the fuzzy boundary) go to the LLM or a human.
 
 ## 60-second demo
 
-1. `npm install && npm run reconcile -- --seed 42 --skip-llm` — generates the batch, runs exact → fuzzy → split, prints the report.
-2. `npm run dashboard` — open http://localhost:5173, see match rate/precision/recall/FP-rate split by case difficulty, plus the full exception list with reasons.
-3. In the dashboard, click **Accept** on one ambiguous exception, then **Re-run with corrections** — watch the human-resolved count go from 0 to 1+ in the match-source chart.
-4. `npm run reconcile -- --seed 42 --compare-llm --llm-provider ollama --llm-model llama3.2` — see the LLM pass's actual impact on recall, side by side with LLM disabled (requires local Ollama).
+1. `npm install && npm run reconcile -- --seed 42 --skip-llm` generates the batch, runs exact → fuzzy → split, and prints the report.
+2. `npm run dashboard` opens http://localhost:5173. You’ll see match rate, precision, recall, and FP rate by case difficulty, plus the full exception list with reasons.
+3. In the dashboard, click **Accept** on one ambiguous exception, then **Re-run with corrections**. The human-resolved count should move from 0 to 1+ in the match-source chart.
+4. `npm run reconcile -- --seed 42 --compare-llm --llm-provider ollama --llm-model llama3.2` shows what the LLM pass actually does to recall, side by side with LLM off (needs local Ollama).
 
 ---
 
@@ -30,9 +30,9 @@ Razorpay-shaped **3-way settlement reconciliation**: Payments → Settlements (g
 | LLM matches | 2 | 0 |
 | Provider | ollama | none |
 
-With Ollama (`llama3.2`) resolving the ambiguous residual, recall rises from **91.30%** to **95.65%**, correctly resolving **2 of the 4** near-duplicate/boundary pairs in that ablation run (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044` — reasoning cited amount + UTR). The other two residual true matches were rejected as `no_match` (exact UTR string inequality on truncated references) — disclosed under Known Limitations. A follow-up non-ablation run with the same provider regenerated `output/report.json` / the dashboard primary view (LLM tier visible in the match-source chart; recall may differ slightly because local LLM output is nondeterministic). Without a provider, both columns fall back to `none` and recall stays at the skip-llm baseline.
+With Ollama (`llama3.2`) on the leftover ambiguous pairs, recall went from **91.30%** to **95.65%**. In that ablation run it correctly resolved **2 of the 4** near-duplicate/boundary pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`; the model cited amount + UTR). The other two true matches were called `no_match` because it treated truncated UTRs as unequal strings. That’s called out under Known Limitations. A later run without `--compare-llm`, same provider, rewrote `output/report.json` and the dashboard main view so the LLM tier shows up in the match-source chart. Recall can shift a bit between runs since local LLM output isn’t deterministic. If there’s no provider, both columns fall back to `none` and recall stays at the skip-llm baseline.
 
-**Human loop:** Accept in the dashboard writes `output/corrections.json`. **Re-run with corrections** (or `npm run reconcile -- --seed 42 --skip-llm --apply-corrections`) lifts recall to **95.65%** with **Human: 2** in the match-source chart (actual run using `data/demo_corrections.json` when no prior corrections file exists).
+**Human loop:** Accept in the dashboard writes `output/corrections.json`. **Re-run with corrections** (or `npm run reconcile -- --seed 42 --skip-llm --apply-corrections`) brings recall to **95.65%** with **Human: 2** in the match-source chart. That run used `data/demo_corrections.json` when no corrections file existed yet.
 
 ```bash
 npm install
@@ -51,18 +51,18 @@ docker run --rm razopay
 
 ## Pipeline
 
-1. **Payments** — gateway captures  
-2. **Settlements** — fee/tax identity + UTR  
-3. **Bank credits** — UTR join on net ≈ credited  
+1. **Payments**: gateway captures  
+2. **Settlements**: fee/tax identity + UTR  
+3. **Bank credits**: UTR join on net ≈ credited  
 4. Passes: integrity → exact → fuzzy → split → LLM → human corrections  
 
-Adversarial classes include near-duplicate decoys, boundary reference mangles, decoy subset-sums, and unresolvable noise — scored by `ambiguityLevel` (`clear` / `boundary` / `decoy` / `unresolvable`). The dashboard shows this breakdown under the summary metrics.
+Adversarial cases include near duplicate decoys, boundary reference mangles, decoy subset sums, and unresolvable noise. They’re scored with `ambiguityLevel` (`clear` / `boundary` / `decoy` / `unresolvable`). The dashboard shows that breakdown under the summary metrics.
 
 ## Human correction click-through
 
 1. Run reconcile, then `npm run dashboard`.
-2. On an ambiguous / exception row, click **Accept** (or **Reject**) — the row greys out as “resolved — pending re-run” and the decision is appended to `output/corrections.json` via the Vite `/api/corrections` route.
-3. Click **Re-run with corrections** — the dashboard triggers `npm run reconcile -- --seed 42 --skip-llm --apply-corrections`, reloads `report.json`, and the match-source **human** bar becomes nonzero. That is the closed finance-ops loop.
+2. On an ambiguous / exception row, click **Accept** (or **Reject**). The row greys out as “resolved — pending re-run” and the decision is appended to `output/corrections.json` via the Vite `/api/corrections` route.
+3. Click **Re-run with corrections**. The dashboard runs `npm run reconcile -- --seed 42 --skip-llm --apply-corrections`, reloads `report.json`, and the match-source **human** bar becomes nonzero. That’s the closed finance-ops loop.
 
 ## Quick start
 
@@ -86,7 +86,7 @@ npm run reconcile -- --seed 42 --skip-llm
 
 ### Optional LLM pass
 
-Selection: `--llm-provider` → `ANTHROPIC_API_KEY` → Ollama → none.
+Provider selection order: `--llm-provider` → `ANTHROPIC_API_KEY` → Ollama → none.
 
 ```bash
 npm run reconcile -- --seed 42 --compare-llm --llm-provider ollama --llm-model llama3.2
@@ -97,7 +97,7 @@ npm run reconcile -- --seed 42 --skip-llm --apply-corrections
 
 ## Metrics (never blended)
 
-Overall precision, recall, and FP rate are reported separately, plus **Accuracy by case difficulty** (clear / boundary / decoy / unresolvable) in both `output/report.md` and the dashboard.
+Overall precision, recall, and FP rate are reported separately. You also get **Accuracy by case difficulty** (clear / boundary / decoy / unresolvable) in both `output/report.md` and the dashboard.
 
 ## Tests & CI
 
@@ -112,14 +112,14 @@ npm run check-baseline
 - Split matching is bounded (pool ≤25, combo ≤6)
 - Ambiguous multi-solution batches are not auto-picked
 - No FX conversion
-- Near-dup / boundary cases need LLM or human for full recall
-- On the Ollama `llama3.2` ablation run (seed 42), the model correctly matched 2 of 4 residual true pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`) citing amount + UTR signals, but incorrectly rejected the other two true near-dup pairs (`bank_0040`/`setl_0040`, `bank_0041`/`setl_0042`) as `no_match` because truncated UTRs were not treated as prefixes — leaving those as false negatives
-- Local LLM output is nondeterministic: a follow-up run with the same seed/model resolved a different 3 of 4 residual pairs (recall 97.83% in `output/report.json` used by the dashboard) while rejecting `bank_0042`/`setl_0044` on the same truncated-UTR rationale — not cherry-picked across re-runs
+- Near dup / boundary cases need LLM or human for full recall
+- On the Ollama `llama3.2` ablation run (seed 42), the model correctly matched 2 of 4 residual true pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`) using amount + UTR signals, but wrongly rejected the other two true near dup pairs (`bank_0040`/`setl_0040`, `bank_0041`/`setl_0042`) as `no_match` because truncated UTRs weren’t treated as prefixes. Those stayed false negatives.
+- Local LLM output isn’t deterministic. A follow-up run with the same seed and model resolved a different 3 of 4 residual pairs (recall 97.83% in `output/report.json`, which the dashboard uses) and rejected `bank_0042`/`setl_0044` for the same truncated-UTR reason. We didn’t re-run until the numbers looked nicer.
 
 ## What broke, and what we did about it
 
-**The first version scored a perfect 100%.** Seed 42 came back with 100% match rate / precision / recall and 0% false positives, and the LLM and human tiers never fired. On a track that penalizes cherry-picked wins, that was a red flag about the data, not a win for the engine. We rebuilt the generator with near-duplicate decoys, boundary UTR mangles at the fuzzy threshold, and split batches with a coincidental decoy sum. The skip-llm baseline is now **97.67% precision / 91.30% recall / 2.33% FP** — lower, but honest, and the residual tiers have real work.
+**The first version scored a perfect 100%.** Seed 42 came back with 100% match rate, precision, and recall, 0% false positives, and the LLM and human tiers never fired. On a track that cares about measured accuracy over a cherry-picked win, that looked like easy data, not a flawless engine. We rebuilt the generator with near duplicate decoys, boundary UTR mangles at the fuzzy threshold, and split batches with a coincidental decoy sum. The skip-llm baseline is now **97.67% precision / 91.30% recall / 2.33% FP**. Lower, but more honest, and the leftover tiers actually have something to do.
 
-**The first LLM ablation was a no-op.** `--compare-llm` printed identical columns because both sides silently fell back to provider `none`. We re-ran against local Ollama (`llama3.2`): recall rose from **91.30% → 95.65%**, correctly resolving **2 of 4** ambiguous pairs; the two false `no_match` verdicts are disclosed under Known Limitations rather than hidden.
+**The first LLM ablation was a no-op.** `--compare-llm` printed the same numbers on both sides because both silently fell back to provider `none`. We ran it again against local Ollama (`llama3.2`): recall went from **91.30% → 95.65%**, correctly resolving **2 of 4** ambiguous pairs. The two false `no_match` calls are under Known Limitations instead of being swept under the rug.
 
-Catching a perfect score and a flat ablation as non-results was the same judgment call as the metrics themselves: treat suspiciously clean output as a failure mode until the residual tiers have something real to resolve.
+Spotting a perfect score and a flat ablation as non results was the same kind of call as the metrics themselves: if the output looks too clean, treat it as a failure mode until the residual tiers have real work left.
