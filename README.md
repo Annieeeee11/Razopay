@@ -61,6 +61,8 @@ npm run reconcile -- --seed 42 --skip-llm --apply-corrections
 Accepted pairs become `matchedBy: human`. Rejected IDs stay permanent exceptions.
 If ≥3 accepts fall in score band 0.65–0.75, the report **logs** a suggested fuzzy threshold (never auto-applied).
 
+## Dashboard
+
 Local visualization over `output/report.json` (CLI remains source of truth):
 
 ```bash

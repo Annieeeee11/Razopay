@@ -4,6 +4,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateAndWrite } from "./data/generate.js";
 import type { ReconcileConfig } from "./data/types.js";
+import {
+  loadCorrections,
+  suggestFuzzyThreshold,
+} from "./engine/corrections.js";
 import { reconcile } from "./engine/reconcile.js";
 import type { LlmProviderChoice } from "./engine/llmResolve.js";
 import { scoreAgainstGroundTruth } from "./scoring/metrics.js";
@@ -113,6 +117,11 @@ async function main(): Promise<void> {
     return;
   }
 
+  const corrections = applyCorrections ? loadCorrections() : [];
+  if (applyCorrections) {
+    console.log(`Loaded ${corrections.length} human correction(s).`);
+  }
+
   const cfg: Partial<ReconcileConfig> = {
     skipLlm,
     llmProvider,
@@ -126,9 +135,9 @@ async function main(): Promise<void> {
     dataset.settlements,
     dataset.bankCredits,
     cfg,
+    corrections,
   );
 
-  // Provider name inferred from whether LLM matches/exceptions mention LLM
   const llmEnabled = result.timing.llmMs > 0 && !skipLlm && llmProvider !== "none";
 
   const metrics = scoreAgainstGroundTruth(
@@ -138,6 +147,14 @@ async function main(): Promise<void> {
     llmEnabled,
     llmProvider ?? (process.env.ANTHROPIC_API_KEY ? "anthropic" : "auto"),
   );
+
+  const suggested = suggestFuzzyThreshold(corrections);
+  if (suggested != null) {
+    metrics.suggestedFuzzyThreshold = suggested;
+    console.log(
+      `Suggested fuzzyAcceptThreshold=${suggested} (from human accepts in 0.65–0.75; not auto-applied)`,
+    );
+  }
 
   const full: FullReport = {
     metrics,
