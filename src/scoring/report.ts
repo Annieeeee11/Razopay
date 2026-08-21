@@ -15,7 +15,8 @@ export interface FullReport {
 }
 
 export const KNOWN_LIMITATIONS = [
-  "1:1 settlement↔bank matching for non-batched rows; batched payouts are generated but not yet auto-resolved (Phase 4 split match pending).",
+  "Split matching uses bounded subset-sum (max pool 25, max combo 6) — demo-scale only.",
+  "Ambiguous multi-solution batches are not auto-resolved.",
   "No FX conversion — currency mismatches are never auto-resolved.",
   "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity only.",
   "Duplicate bank credits: first claim wins; extras become exceptions.",

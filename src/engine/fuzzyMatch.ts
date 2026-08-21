@@ -250,14 +250,7 @@ export function fuzzyMatch(
         exceptionType: "currency_mismatch",
       });
       resolvedBank.add(bank.id);
-      continue;
     }
-    exceptions.push({
-      recordId: bank.id,
-      source: "bank",
-      reason: "no counterpart within date/amount window",
-    });
-    resolvedBank.add(bank.id);
   }
 
   for (const settlement of settlementPool) {
@@ -270,16 +263,10 @@ export function fuzzyMatch(
         exceptionType: "currency_mismatch",
       });
       usedSettlement.add(settlement.settlementId);
-      continue;
     }
-    exceptions.push({
-      recordId: settlement.settlementId,
-      source: "settlement",
-      reason: "no counterpart within date/amount window",
-    });
-    usedSettlement.add(settlement.settlementId);
   }
 
+  // Leftovers stay in remaining* for split / LLM / final exception pass
   return {
     matches,
     ambiguous,

@@ -70,7 +70,7 @@ describe("fuzzyMatch", () => {
     );
   });
 
-  it("rejects pairs outside date/amount window", () => {
+  it("leaves unmatched rows in remaining pools (no silent drop)", () => {
     const result = fuzzyMatch(
       [bank({ id: "B1", creditedAt: "2025-01-01", creditedAmount: 100 })],
       [
@@ -82,10 +82,7 @@ describe("fuzzyMatch", () => {
       ],
     );
     expect(result.matches).toHaveLength(0);
-    expect(
-      result.exceptions.some((e) =>
-        e.reason.includes("no counterpart within date/amount window"),
-      ),
-    ).toBe(true);
+    expect(result.remainingBank).toHaveLength(1);
+    expect(result.remainingSettlements).toHaveLength(1);
   });
 });

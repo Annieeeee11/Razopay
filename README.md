@@ -6,7 +6,7 @@ Reconciles Razorpay-style **3-way settlement flow**:
 2. **Settlements** (gross / fee / tax / net + UTR)
 3. **Bank payout credits** (UTR join on net amount)
 
-Deterministic passes (exact → fuzzy) resolve the majority of 1:1 rows. Optional LLM handles the ambiguous residual. Batched payouts are generated as ground truth and left as reasoned exceptions until the split-match pass lands.
+Deterministic passes (exact → fuzzy → split) resolve the majority of rows. Optional LLM handles the ambiguous residual. Batched payouts (one bank credit = sum of settlement nets) are matched via bounded subset-sum.
 
 ## Quick start
 
