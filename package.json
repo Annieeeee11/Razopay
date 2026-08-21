@@ -7,7 +7,8 @@
   "scripts": {
     "reconcile": "tsx src/cli.ts",
     "generate": "tsx src/cli.ts --generate-only",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dashboard": "npm run dev --prefix dashboard"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0"

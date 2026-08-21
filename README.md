@@ -49,6 +49,16 @@ npm run reconcile -- --seed 42 --llm-provider ollama --llm-model llama3.2
 
 Before any calls the CLI prints: `LLM pass: N ambiguous pairs, provider=<x>, est. calls=N`.
 
+## Dashboard
+
+Local visualization over `output/report.json` (CLI remains source of truth):
+
+```bash
+npm run reconcile -- --seed 42 --skip-llm
+npm run dashboard
+# open http://localhost:5173
+```
+
 ## Metrics (never blended)
 
 | Metric | Meaning |

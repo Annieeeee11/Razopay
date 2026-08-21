@@ -1,0 +1,497 @@
+{
+  "metrics": {
+    "matchRate": 0.9318181818181818,
+    "precision": 1,
+    "recall": 0.9318181818181818,
+    "falsePositiveRate": 0,
+    "exceptionAccuracy": 0.6296296296296297,
+    "trueMatchCount": 44,
+    "predictedMatchCount": 41,
+    "truePositive": 41,
+    "falsePositive": 0,
+    "falseNegative": 3,
+    "trueExceptionCount": 17,
+    "predictedExceptionCount": 27,
+    "correctlyFlaggedExceptions": 17,
+    "throughputRecordsPerSec": 8665.92,
+    "timing": {
+      "exactMs": 0.288,
+      "fuzzyMs": 11.342,
+      "splitMs": 0,
+      "llmMs": 0.136,
+      "totalMs": 12.578
+    },
+    "matchSourceBreakdown": {
+      "exact": 24,
+      "fuzzy": 17,
+      "split": 0,
+      "llm": 0,
+      "human": 0
+    },
+    "bankCount": 52,
+    "settlementCount": 57,
+    "paymentCount": 57,
+    "seed": 42,
+    "llmEnabled": false,
+    "llmProvider": "none"
+  },
+  "matches": [
+    {
+      "bankCreditId": "bank_0001",
+      "settlementId": "setl_0001",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0002",
+      "settlementId": "setl_0002",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0003",
+      "settlementId": "setl_0003",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0004",
+      "settlementId": "setl_0004",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0005",
+      "settlementId": "setl_0005",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0006",
+      "settlementId": "setl_0006",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0007",
+      "settlementId": "setl_0007",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0008",
+      "settlementId": "setl_0008",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0009",
+      "settlementId": "setl_0009",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0010",
+      "settlementId": "setl_0010",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0011",
+      "settlementId": "setl_0011",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0012",
+      "settlementId": "setl_0012",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0013",
+      "settlementId": "setl_0013",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0014",
+      "settlementId": "setl_0014",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0015",
+      "settlementId": "setl_0015",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0016",
+      "settlementId": "setl_0016",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0017",
+      "settlementId": "setl_0017",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0018",
+      "settlementId": "setl_0018",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0019",
+      "settlementId": "setl_0019",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0020",
+      "settlementId": "setl_0020",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0021",
+      "settlementId": "setl_0021",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0022",
+      "settlementId": "setl_0022",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0040",
+      "settlementId": "setl_0040",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0042",
+      "settlementId": "setl_0041",
+      "confidence": 1,
+      "matchedBy": "exact",
+      "reasoning": "Exact UTR, net/credited amount, currency, and date match"
+    },
+    {
+      "bankCreditId": "bank_0036",
+      "settlementId": "setl_0036",
+      "confidence": 1,
+      "matchedBy": "fuzzy",
+      "reasoning": "near-exact fuzzy agreement"
+    },
+    {
+      "bankCreditId": "bank_0037",
+      "settlementId": "setl_0037",
+      "confidence": 1,
+      "matchedBy": "fuzzy",
+      "reasoning": "near-exact fuzzy agreement"
+    },
+    {
+      "bankCreditId": "bank_0039",
+      "settlementId": "setl_0039",
+      "confidence": 1,
+      "matchedBy": "fuzzy",
+      "reasoning": "near-exact fuzzy agreement"
+    },
+    {
+      "bankCreditId": "bank_0035",
+      "settlementId": "setl_0035",
+      "confidence": 0.98,
+      "matchedBy": "fuzzy",
+      "reasoning": "UTR similarity 0.93"
+    },
+    {
+      "bankCreditId": "bank_0038",
+      "settlementId": "setl_0038",
+      "confidence": 0.98,
+      "matchedBy": "fuzzy",
+      "reasoning": "UTR similarity 0.93"
+    },
+    {
+      "bankCreditId": "bank_0027",
+      "settlementId": "setl_0027",
+      "confidence": 0.925,
+      "matchedBy": "fuzzy",
+      "reasoning": "date off by 1d"
+    },
+    {
+      "bankCreditId": "bank_0028",
+      "settlementId": "setl_0028",
+      "confidence": 0.925,
+      "matchedBy": "fuzzy",
+      "reasoning": "date off by 1d"
+    },
+    {
+      "bankCreditId": "bank_0029",
+      "settlementId": "setl_0029",
+      "confidence": 0.925,
+      "matchedBy": "fuzzy",
+      "reasoning": "date off by 1d"
+    },
+    {
+      "bankCreditId": "bank_0031",
+      "settlementId": "setl_0031",
+      "confidence": 0.8988,
+      "matchedBy": "fuzzy",
+      "reasoning": "amount delta within tolerance (score 0.75)"
+    },
+    {
+      "bankCreditId": "bank_0034",
+      "settlementId": "setl_0034",
+      "confidence": 0.8985,
+      "matchedBy": "fuzzy",
+      "reasoning": "amount delta within tolerance (score 0.75)"
+    },
+    {
+      "bankCreditId": "bank_0033",
+      "settlementId": "setl_0033",
+      "confidence": 0.8981,
+      "matchedBy": "fuzzy",
+      "reasoning": "amount delta within tolerance (score 0.75)"
+    },
+    {
+      "bankCreditId": "bank_0032",
+      "settlementId": "setl_0032",
+      "confidence": 0.8967,
+      "matchedBy": "fuzzy",
+      "reasoning": "amount delta within tolerance (score 0.74)"
+    },
+    {
+      "bankCreditId": "bank_0030",
+      "settlementId": "setl_0030",
+      "confidence": 0.8935,
+      "matchedBy": "fuzzy",
+      "reasoning": "amount delta within tolerance (score 0.73)"
+    },
+    {
+      "bankCreditId": "bank_0024",
+      "settlementId": "setl_0024",
+      "confidence": 0.85,
+      "matchedBy": "fuzzy",
+      "reasoning": "date off by 2d"
+    },
+    {
+      "bankCreditId": "bank_0025",
+      "settlementId": "setl_0025",
+      "confidence": 0.85,
+      "matchedBy": "fuzzy",
+      "reasoning": "date off by 2d"
+    },
+    {
+      "bankCreditId": "bank_0026",
+      "settlementId": "setl_0026",
+      "confidence": 0.85,
+      "matchedBy": "fuzzy",
+      "reasoning": "date off by 2d"
+    },
+    {
+      "bankCreditId": "bank_0023",
+      "settlementId": "setl_0023",
+      "confidence": 0.775,
+      "matchedBy": "fuzzy",
+      "reasoning": "date off by 3d"
+    }
+  ],
+  "exceptions": [
+    {
+      "recordId": "setl_0044",
+      "source": "settlement",
+      "reason": "fee/tax miscalculation: netAmount 360.12 ≠ gross(344.26) - fee(7.78) - tax(1.4) = 335.08",
+      "exceptionType": "fee_tax_mismatch"
+    },
+    {
+      "recordId": "setl_0045",
+      "source": "settlement",
+      "reason": "fee/tax miscalculation: netAmount 2343.23 ≠ gross(2333.48) - fee(38.18) - tax(6.87) = 2288.43",
+      "exceptionType": "fee_tax_mismatch"
+    },
+    {
+      "recordId": "setl_0046",
+      "source": "settlement",
+      "reason": "fee/tax miscalculation: netAmount 2373.36 ≠ gross(2410.77) - fee(56.15) - tax(10.11) = 2344.51",
+      "exceptionType": "fee_tax_mismatch"
+    },
+    {
+      "recordId": "bank_0041",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
+    },
+    {
+      "recordId": "bank_0043",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
+    },
+    {
+      "recordId": "bank_0044",
+      "source": "bank",
+      "reason": "currency mismatch, not auto-resolved",
+      "exceptionType": "currency_mismatch"
+    },
+    {
+      "recordId": "bank_0045",
+      "source": "bank",
+      "reason": "currency mismatch, not auto-resolved",
+      "exceptionType": "currency_mismatch"
+    },
+    {
+      "recordId": "bank_0046",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
+    },
+    {
+      "recordId": "bank_0047",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
+    },
+    {
+      "recordId": "bank_0048",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
+    },
+    {
+      "recordId": "bank_0049",
+      "source": "bank",
+      "reason": "UTR present in bank feed but no matching settlement (unclaimed credit)",
+      "exceptionType": "unclaimed_bank_credit"
+    },
+    {
+      "recordId": "bank_0050",
+      "source": "bank",
+      "reason": "batched payout — awaiting split match",
+      "exceptionType": "batched_payout"
+    },
+    {
+      "recordId": "bank_0051",
+      "source": "bank",
+      "reason": "batched payout — awaiting split match",
+      "exceptionType": "batched_payout"
+    },
+    {
+      "recordId": "bank_0052",
+      "source": "bank",
+      "reason": "batched payout — awaiting split match",
+      "exceptionType": "batched_payout"
+    },
+    {
+      "recordId": "setl_0042",
+      "source": "settlement",
+      "reason": "currency mismatch, not auto-resolved",
+      "exceptionType": "currency_mismatch"
+    },
+    {
+      "recordId": "setl_0043",
+      "source": "settlement",
+      "reason": "currency mismatch, not auto-resolved",
+      "exceptionType": "currency_mismatch"
+    },
+    {
+      "recordId": "setl_0047",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0048",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0049",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0050",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0051",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0052",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0053",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0054",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0055",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0056",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    },
+    {
+      "recordId": "setl_0057",
+      "source": "settlement",
+      "reason": "settlement present, bank credit missing (payout may be in transit)",
+      "exceptionType": "settlement_pending_bank"
+    }
+  ],
+  "knownLimitations": [
+    "1:1 settlement↔bank matching for non-batched rows; batched payouts are generated but not yet auto-resolved (Phase 4 split match pending).",
+    "No FX conversion — currency mismatches are never auto-resolved.",
+    "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity only.",
+    "Duplicate bank credits: first claim wins; extras become exceptions."
+  ]
+}
