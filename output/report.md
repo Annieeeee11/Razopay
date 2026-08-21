@@ -14,8 +14,8 @@ LLM pass: disabled / unavailable
 | Recall | 91.30% |
 | False positive rate | 2.33% |
 | Exception accuracy | 75.00% |
-| Throughput | 9453.07 records/sec |
-| Runtime (total) | 13.33 ms |
+| Throughput | 8454.11 records/sec |
+| Runtime (total) | 14.90 ms |
 
 ### Counts
 
@@ -40,11 +40,11 @@ LLM pass: disabled / unavailable
 
 | Pass timing | ms |
 | --- | ---: |
-| Exact | 0.38 |
-| Fuzzy | 10.83 |
-| Split | 0.66 |
-| LLM | 0.26 |
-| Total | 13.33 |
+| Exact | 0.52 |
+| Fuzzy | 11.43 |
+| Split | 1.06 |
+| LLM | 0.28 |
+| Total | 14.90 |
 
 ## Accuracy by case difficulty
 
