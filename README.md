@@ -1,12 +1,34 @@
 # Razopay — Payment Gateway Settlement Reconciliation
 
-Reconciles Razorpay-style **3-way settlement flow**:
+Razorpay-shaped **3-way settlement reconciliation**: Payments → Settlements (gross/fee/tax/net + UTR) → Bank payout credits. Deterministic exact → fuzzy → split passes resolve the batch; optional BYOK/Ollama LLM and human corrections handle the residual.
 
-1. **Payments** (orders captured on the gateway)
-2. **Settlements** (gross / fee / tax / net + UTR)
-3. **Bank payout credits** (UTR join on net amount)
+**Seed 42 headline metrics** (`npm run reconcile -- --seed 42 --skip-llm`):
 
-Deterministic passes (exact → fuzzy → split) resolve the majority of rows. Optional LLM handles the ambiguous residual. Batched payouts (one bank credit = sum of settlement nets) are matched via bounded subset-sum.
+| Precision | Recall | FP rate | Split matches |
+| ---: | ---: | ---: | ---: |
+| 100% | 100% | 0% | 3 |
+
+```bash
+npm install
+npm run reconcile -- --seed 42 --skip-llm
+npm run dashboard   # http://localhost:5173 — local viz over output/report.json
+```
+
+Docker (zero local setup):
+
+```bash
+docker build -t razopay .
+docker run --rm razopay
+```
+
+---
+
+## Pipeline
+
+1. **Payments** — gateway order/payment captures  
+2. **Settlements** — fee/tax identity + UTR  
+3. **Bank credits** — UTR join on `creditedAmount` ≈ `netAmount`  
+4. Passes: integrity → exact → fuzzy → **split** (batched payouts) → LLM → human corrections  
 
 ## Quick start
 
@@ -15,9 +37,7 @@ npm install
 npm run reconcile -- --seed 42 --skip-llm
 ```
 
-Outputs:
-- `data/payments.json`, `data/settlements.json`, `data/bank_credits.json`, `data/ground_truth.json`
-- `output/report.json`, `output/report.md`
+Outputs: `data/*.json`, `output/report.json`, `output/report.md` (also copied to `dashboard/public/report.json`).
 
 ### Options
 
@@ -35,41 +55,30 @@ Outputs:
 Selection order: `--llm-provider` → `ANTHROPIC_API_KEY` → Ollama at `localhost:11434` → none.
 
 ```bash
-# No key required — skip LLM entirely
 npm run reconcile -- --seed 42 --skip-llm
-
-# Anthropic BYOK
 export ANTHROPIC_API_KEY=sk-ant-...
 npm run reconcile -- --seed 42 --llm-provider anthropic
-
-# Local Ollama (zero cloud cost)
-ollama serve   # separate terminal
 npm run reconcile -- --seed 42 --llm-provider ollama --llm-model llama3.2
 ```
 
-Before any calls the CLI prints: `LLM pass: N ambiguous pairs, provider=<x>, est. calls=N`.
+Before calls: `LLM pass: N ambiguous pairs, provider=<x>, est. calls=N`.
 
 ## Human corrections
 
-In the dashboard, Accept / Reject on exception rows writes `output/corrections.json`.
-Re-run with overrides:
+Dashboard Accept / Reject → `output/corrections.json`. Re-apply:
 
 ```bash
 npm run reconcile -- --seed 42 --skip-llm --apply-corrections
 ```
 
-Accepted pairs become `matchedBy: human`. Rejected IDs stay permanent exceptions.
-If ≥3 accepts fall in score band 0.65–0.75, the report **logs** a suggested fuzzy threshold (never auto-applied).
-
 ## Dashboard
-
-Local visualization over `output/report.json` (CLI remains source of truth):
 
 ```bash
 npm run reconcile -- --seed 42 --skip-llm
 npm run dashboard
-# open http://localhost:5173
 ```
+
+CLI is the source of truth; the dashboard is a local visualization layer.
 
 ## Metrics (never blended)
 
@@ -81,11 +90,15 @@ npm run dashboard
 | **Exception accuracy** | Of flagged exceptions, % that are true exceptions |
 | **Throughput** | records/sec |
 
-## Tests
+## Tests & CI
 
 ```bash
 npm test
+npm run reconcile -- --seed 42 --skip-llm
+npm run check-baseline
 ```
+
+CI runs the same on every push and fails if precision/recall regress below `baselines/seed42.json`.
 
 ## Known limitations
 

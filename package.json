@@ -1,14 +1,15 @@
 {
-  "name": "finance-controller",
-  "version": "1.0.0",
+  "name": "razopay",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Multi-source bank vs ledger reconciliation agent",
+  "description": "Razorpay-style payment gateway settlement reconciliation",
   "scripts": {
     "reconcile": "tsx src/cli.ts",
     "generate": "tsx src/cli.ts --generate-only",
     "test": "vitest run",
-    "dashboard": "npm run dev --prefix dashboard"
+    "dashboard": "npm run dev --prefix dashboard",
+    "check-baseline": "node scripts/check-baseline.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0"

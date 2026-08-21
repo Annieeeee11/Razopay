@@ -1,8 +1,10 @@
+data/*
 !data/.gitkeep
-output/
+output/*
 !output/.gitkeep
+!output/report.md
 node_modules/
+dashboard/node_modules/
 dist/
 .env
 *.log
-dashboard/node_modules/

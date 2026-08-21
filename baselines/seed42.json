@@ -1,0 +1,7 @@
+{
+  "seed": 42,
+  "minPrecision": 1.0,
+  "minRecall": 0.95,
+  "maxFalsePositiveRate": 0.0,
+  "minMatchRate": 0.95
+}
