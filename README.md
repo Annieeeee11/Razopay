@@ -10,7 +10,7 @@ Razorpay-shaped **3-way settlement reconciliation**: Payments → Settlements (g
 1. `npm install && npm run reconcile -- --seed 42 --skip-llm` — generates the batch, runs exact → fuzzy → split, prints the report.
 2. `npm run dashboard` — open http://localhost:5173, see match rate/precision/recall/FP-rate split by case difficulty, plus the full exception list with reasons.
 3. In the dashboard, click **Accept** on one ambiguous exception, then **Re-run with corrections** — watch the human-resolved count go from 0 to 1+ in the match-source chart.
-4. `npm run reconcile -- --seed 42 --compare-llm` — see the LLM pass's actual impact on recall, side by side with LLM disabled.
+4. `npm run reconcile -- --seed 42 --compare-llm --llm-provider ollama --llm-model llama3.2` — see the LLM pass's actual impact on recall, side by side with LLM disabled (requires local Ollama).
 
 ---
 
@@ -20,17 +20,17 @@ Razorpay-shaped **3-way settlement reconciliation**: Payments → Settlements (g
 | ---: | ---: | ---: | ---: |
 | 97.67% | 91.30% | 2.33% | 22 / 18 / 3 / 0 / 0 |
 
-**LLM ablation** (`npm run reconcile -- --seed 42 --compare-llm`, actual run):
+**LLM ablation** (`npm run reconcile -- --seed 42 --compare-llm --llm-provider ollama --llm-model llama3.2`, actual run):
 
 | | With LLM | Without LLM |
 | --- | ---: | ---: |
-| Match rate / Recall | 91.30% | 91.30% |
-| Precision | 97.67% | 97.67% |
-| FP rate | 2.33% | 2.33% |
-| LLM matches | 0 | 0 |
-| Provider | none | none |
+| Match rate / Recall | 95.65% | 91.30% |
+| Precision | 97.78% | 97.67% |
+| FP rate | 2.22% | 2.33% |
+| LLM matches | 2 | 0 |
+| Provider | ollama | none |
 
-Without an API key or local Ollama, both columns fall back to `none` — so recall stays **91.30%**. The batch still produces **4 ambiguous pairs** waiting for the LLM tier; with `ANTHROPIC_API_KEY` or Ollama those are what the LLM pass earns. See Known Limitations for what remains unresolvable either way (decoy splits, currency, fee/tax, noise).
+With Ollama (`llama3.2`) resolving the ambiguous residual, recall rises from **91.30%** to **95.65%**, correctly resolving **2 of the 4** near-duplicate/boundary pairs in that ablation run (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044` — reasoning cited amount + UTR). The other two residual true matches were rejected as `no_match` (exact UTR string inequality on truncated references) — disclosed under Known Limitations. A follow-up non-ablation run with the same provider regenerated `output/report.json` / the dashboard primary view (LLM tier visible in the match-source chart; recall may differ slightly because local LLM output is nondeterministic). Without a provider, both columns fall back to `none` and recall stays at the skip-llm baseline.
 
 **Human loop:** Accept in the dashboard writes `output/corrections.json`. **Re-run with corrections** (or `npm run reconcile -- --seed 42 --skip-llm --apply-corrections`) lifts recall to **95.65%** with **Human: 2** in the match-source chart (actual run using `data/demo_corrections.json` when no prior corrections file exists).
 
@@ -89,7 +89,8 @@ npm run reconcile -- --seed 42 --skip-llm
 Selection: `--llm-provider` → `ANTHROPIC_API_KEY` → Ollama → none.
 
 ```bash
-npm run reconcile -- --seed 42 --compare-llm
+npm run reconcile -- --seed 42 --compare-llm --llm-provider ollama --llm-model llama3.2
+npm run reconcile -- --seed 42 --llm-provider ollama --llm-model llama3.2
 npm run reconcile -- --seed 42 --runs 5 --skip-llm
 npm run reconcile -- --seed 42 --skip-llm --apply-corrections
 ```
@@ -112,4 +113,5 @@ npm run check-baseline
 - Ambiguous multi-solution batches are not auto-picked
 - No FX conversion
 - Near-dup / boundary cases need LLM or human for full recall
-- LLM ablation is flat until a provider is configured; ambiguous residual still shows in the exception list
+- On the Ollama `llama3.2` ablation run (seed 42), the model correctly matched 2 of 4 residual true pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`) citing amount + UTR signals, but incorrectly rejected the other two true near-dup pairs (`bank_0040`/`setl_0040`, `bank_0041`/`setl_0042`) as `no_match` because truncated UTRs were not treated as prefixes — leaving those as false negatives
+- Local LLM output is nondeterministic: a follow-up run with the same seed/model resolved a different 3 of 4 residual pairs (recall 97.83% in `output/report.json` used by the dashboard) while rejecting `bank_0042`/`setl_0044` on the same truncated-UTR rationale — not cherry-picked across re-runs

@@ -1,39 +1,39 @@
 {
   "metrics": {
-    "matchRate": 0.9130434782608695,
-    "precision": 0.9767441860465116,
-    "recall": 0.9130434782608695,
-    "falsePositiveRate": 0.023255813953488372,
-    "exceptionAccuracy": 0.75,
+    "matchRate": 0.9782608695652174,
+    "precision": 0.9782608695652174,
+    "recall": 0.9782608695652174,
+    "falsePositiveRate": 0.021739130434782608,
+    "exceptionAccuracy": 0.9230769230769231,
     "trueMatchCount": 46,
-    "predictedMatchCount": 43,
-    "truePositive": 42,
+    "predictedMatchCount": 46,
+    "truePositive": 45,
     "falsePositive": 1,
-    "falseNegative": 4,
+    "falseNegative": 1,
     "trueExceptionCount": 30,
-    "predictedExceptionCount": 32,
+    "predictedExceptionCount": 26,
     "correctlyFlaggedExceptions": 24,
-    "throughputRecordsPerSec": 2875.07,
+    "throughputRecordsPerSec": 9.57,
     "timing": {
-      "exactMs": 0.602,
-      "fuzzyMs": 11.544,
-      "splitMs": 0.692,
-      "llmMs": 29.677,
-      "totalMs": 43.825
+      "exactMs": 0.916,
+      "fuzzyMs": 19.626,
+      "splitMs": 1.057,
+      "llmMs": 13104.079,
+      "totalMs": 13166.794
     },
     "matchSourceBreakdown": {
       "exact": 22,
       "fuzzy": 18,
       "split": 3,
-      "llm": 0,
+      "llm": 3,
       "human": 0
     },
     "bankCount": 57,
     "settlementCount": 69,
     "paymentCount": 69,
     "seed": 42,
-    "llmEnabled": false,
-    "llmProvider": "none",
+    "llmEnabled": true,
+    "llmProvider": "ollama",
     "byAmbiguityLevel": {
       "clear": {
         "matchRate": 1,
@@ -46,22 +46,22 @@
         "notes": "trivial exact/fuzzy cases"
       },
       "boundary": {
-        "matchRate": 0.8,
+        "matchRate": 1,
         "precision": 1,
-        "recall": 0.8,
+        "recall": 1,
         "trueMatchCount": 5,
-        "predictedMatchCount": 4,
-        "truePositive": 4,
+        "predictedMatchCount": 5,
+        "truePositive": 5,
         "falsePositive": 0,
         "notes": "at fuzzy threshold edge"
       },
       "decoy": {
-        "matchRate": 0,
-        "precision": 0,
-        "recall": 0,
+        "matchRate": 0.6666666666666666,
+        "precision": 0.6666666666666666,
+        "recall": 0.6666666666666666,
         "trueMatchCount": 3,
-        "predictedMatchCount": 1,
-        "truePositive": 0,
+        "predictedMatchCount": 3,
+        "truePositive": 2,
         "falsePositive": 1,
         "correctlyDeferred": 11,
         "deferredTotal": 16,
@@ -78,24 +78,6 @@
         "correctlyDeferred": 15,
         "deferredTotal": 15,
         "notes": "correctly flagged as exception"
-      }
-    },
-    "llmAblation": {
-      "providerAvailable": false,
-      "withLlm": {
-        "matchRate": 0.9130434782608695,
-        "precision": 0.9767441860465116,
-        "recall": 0.9130434782608695,
-        "falsePositiveRate": 0.023255813953488372,
-        "llmMatches": 0,
-        "provider": "none"
-      },
-      "withoutLlm": {
-        "matchRate": 0.9130434782608695,
-        "precision": 0.9767441860465116,
-        "recall": 0.9130434782608695,
-        "falsePositiveRate": 0.023255813953488372,
-        "llmMatches": 0
       }
     }
   },
@@ -417,6 +399,27 @@
       "confidence": 1,
       "matchedBy": "split",
       "reasoning": "Unique subset-sum: setl_0041 + setl_0052 + setl_0053 + setl_0054 + setl_0055 = 2837.24"
+    },
+    {
+      "bankCreditId": "bank_0039",
+      "settlementId": "setl_0039",
+      "confidence": 0.8,
+      "matchedBy": "llm",
+      "reasoning": "LLM verdict: match — netAmounts match"
+    },
+    {
+      "bankCreditId": "bank_0040",
+      "settlementId": "setl_0040",
+      "confidence": 0.8,
+      "matchedBy": "llm",
+      "reasoning": "LLM verdict: match — net amounts match in both UTR and settlement record"
+    },
+    {
+      "bankCreditId": "bank_0041",
+      "settlementId": "setl_0042",
+      "confidence": 0.8,
+      "matchedBy": "llm",
+      "reasoning": "LLM verdict: match — utr and net amount match exactly"
     }
   ],
   "exceptions": [
@@ -475,44 +478,14 @@
       "exceptionType": "batched_payout"
     },
     {
-      "recordId": "bank_0039",
-      "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
-    },
-    {
-      "recordId": "setl_0039",
-      "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
-    },
-    {
-      "recordId": "bank_0040",
-      "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
-    },
-    {
-      "recordId": "setl_0040",
-      "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
-    },
-    {
-      "recordId": "bank_0041",
-      "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
-    },
-    {
-      "recordId": "setl_0042",
-      "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
-    },
-    {
       "recordId": "bank_0042",
       "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "LLM verdict: no_match — UTR mismatch: UTR000042DYV84R != UTR000042D"
     },
     {
       "recordId": "setl_0044",
       "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "LLM verdict: no_match — UTR mismatch: UTR000042DYV84R != UTR000042D"
     },
     {
       "recordId": "bank_0047",
