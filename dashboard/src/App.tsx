@@ -216,7 +216,7 @@ export default function App() {
   return (
     <div className="shell">
       <header className="hero">
-        <p className="brand">Razopay</p>
+        <p className="brand">SettleSure</p>
         <h1>Settlement reconciliation</h1>
         <p className="sub">
           Payment → Settlement → Bank credit · seed {m.seed} ·{" "}

@@ -1,4 +1,4 @@
-# Razopay: Payment Gateway Settlement Reconciliation
+# SettleSure: Payment Gateway Settlement Reconciliation
 
 ![CI](https://github.com/Annieeeee11/Razopay/actions/workflows/ci.yml/badge.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
@@ -43,8 +43,8 @@ npm run dashboard   # http://localhost:5173
 Docker:
 
 ```bash
-docker build -t razopay .
-docker run --rm razopay
+docker build -t settlesure .
+docker run --rm settlesure
 ```
 
 ---
