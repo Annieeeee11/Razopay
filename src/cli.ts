@@ -22,6 +22,9 @@ import {
   writeReport,
   type FullReport,
 } from "./scoring/report.js";
+import { formatTerminal } from "./scoring/terminalReport.js";
+import { dim } from "./cli/ansi.js";
+import { printBanner } from "./cli/banner.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -80,6 +83,8 @@ function parseArgs(argv: string[]): {
       runs = Number(next);
     } else if (arg === "--compare-llm") {
       compareLlm = true;
+    } else if (arg === "--no-banner") {
+      // handled in main(); ignore here
     } else if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
@@ -113,6 +118,7 @@ Options:
   --apply-corrections             Apply corrections (output/ or data/demo_)
   --runs <n>                      Run seeds seed..seed+n-1; report mean±range
   --compare-llm                   Ablate LLM on vs off for the same seed
+  --no-banner                     Skip the startup logo (also skipped when not a TTY)
   -h, --help                      Show help
 `);
 }
@@ -179,15 +185,21 @@ async function runOnce(options: {
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
+  const argv = process.argv.slice(2);
+  if (process.stdout.isTTY && !argv.includes("--no-banner")) {
+    printBanner();
+  }
+  const args = parseArgs(argv);
 
   if (args.generateOnly) {
-    console.log(`Generating synthetic settlement dataset (seed=${args.seed})...`);
+    console.log(dim(`Generating synthetic settlement dataset (seed=${args.seed})...`));
     const dataset = generateAndWrite(args.seed);
     console.log(
-      `Wrote ${dataset.payments.length} payments, ${dataset.settlements.length} settlements, ${dataset.bankCredits.length} bank credits, ${dataset.groundTruth.length} ground-truth labels, ${dataset.demoCorrections.length} demo corrections.`,
+      dim(
+        `Wrote ${dataset.payments.length} payments, ${dataset.settlements.length} settlements, ${dataset.bankCredits.length} bank credits, ${dataset.groundTruth.length} ground-truth labels, ${dataset.demoCorrections.length} demo corrections.`,
+      ),
     );
-    console.log("Done (--generate-only).");
+    console.log(dim("Done (--generate-only)."));
     return;
   }
 
@@ -195,11 +207,15 @@ async function main(): Promise<void> {
     ? loadCorrectionsWithFallback()
     : [];
   if (args.applyCorrections) {
-    console.log(`Loaded ${corrections.length} human correction(s).`);
+    console.log(dim(`Loaded ${corrections.length} human correction(s).`));
   }
 
   if (args.runs > 1) {
-    console.log(`Running robustness suite: ${args.runs} seeds starting at ${args.seed}...`);
+    console.log(
+      dim(
+        `Running robustness suite: ${args.runs} seeds starting at ${args.seed}...`,
+      ),
+    );
     const seeds: number[] = [];
     const matchRates: number[] = [];
     const precisions: number[] = [];
@@ -223,7 +239,9 @@ async function main(): Promise<void> {
       fps.push(metrics.falsePositiveRate);
       lastFull = full;
       console.log(
-        `  seed ${s}: match=${(metrics.matchRate * 100).toFixed(1)}% P=${(metrics.precision * 100).toFixed(1)}% R=${(metrics.recall * 100).toFixed(1)}% FP=${(metrics.falsePositiveRate * 100).toFixed(1)}%`,
+        dim(
+          `  seed ${s}: match=${(metrics.matchRate * 100).toFixed(1)}% P=${(metrics.precision * 100).toFixed(1)}% R=${(metrics.recall * 100).toFixed(1)}% FP=${(metrics.falsePositiveRate * 100).toFixed(1)}%`,
+        ),
       );
     }
 
@@ -235,17 +253,14 @@ async function main(): Promise<void> {
       falsePositiveRate: meanMinMax(fps),
     };
     lastFull!.metrics.robustness = robustness;
-    const { jsonPath, mdPath, markdown } = writeReport(lastFull!);
+    const { jsonPath, mdPath } = writeReport(lastFull!);
     copyReportToDashboard(jsonPath);
-    console.log("");
-    console.log(markdown);
-    console.log(`Wrote ${jsonPath}`);
-    console.log(`Wrote ${mdPath}`);
+    console.log(formatTerminal(lastFull!, { jsonPath, mdPath }));
     return;
   }
 
   if (args.compareLlm) {
-    console.log(`LLM ablation for seed ${args.seed}...`);
+    console.log(dim(`LLM ablation for seed ${args.seed}...`));
     const withRun = await runOnce({
       seed: args.seed,
       skipLlm: false,
@@ -283,16 +298,13 @@ async function main(): Promise<void> {
     if (suggested != null) {
       withRun.full.metrics.suggestedFuzzyThreshold = suggested;
     }
-    const { jsonPath, mdPath, markdown } = writeReport(withRun.full);
+    const { jsonPath, mdPath } = writeReport(withRun.full);
     copyReportToDashboard(jsonPath);
-    console.log("");
-    console.log(markdown);
-    console.log(`Wrote ${jsonPath}`);
-    console.log(`Wrote ${mdPath}`);
+    console.log(formatTerminal(withRun.full, { jsonPath, mdPath }));
     return;
   }
 
-  console.log(`Generating + reconciling (seed=${args.seed})...`);
+  console.log(dim(`Generating + reconciling (seed=${args.seed})...`));
   const { metrics, full } = await runOnce({
     seed: args.seed,
     skipLlm: args.skipLlm,
@@ -305,16 +317,15 @@ async function main(): Promise<void> {
   if (suggested != null) {
     metrics.suggestedFuzzyThreshold = suggested;
     console.log(
-      `Suggested fuzzyAcceptThreshold=${suggested} (from human accepts in 0.65–0.75; not auto-applied)`,
+      dim(
+        `Suggested fuzzyAcceptThreshold=${suggested} (from human accepts in 0.65–0.75; not auto-applied)`,
+      ),
     );
   }
 
-  const { jsonPath, mdPath, markdown } = writeReport(full);
+  const { jsonPath, mdPath } = writeReport(full);
   copyReportToDashboard(jsonPath);
-  console.log("");
-  console.log(markdown);
-  console.log(`Wrote ${jsonPath}`);
-  console.log(`Wrote ${mdPath}`);
+  console.log(formatTerminal(full, { jsonPath, mdPath }));
 }
 
 main().catch((err) => {

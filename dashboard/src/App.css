@@ -37,11 +37,21 @@ body {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   font-family: "IBM Plex Serif", Georgia, serif;
   font-size: 1.75rem;
   letter-spacing: -0.02em;
   margin: 0 0 0.35rem;
   color: var(--accent);
+}
+
+.brand-mark {
+  height: 36px;
+  width: auto;
+  flex-shrink: 0;
+  border-radius: 2px;
 }
 
 .hero h1 {

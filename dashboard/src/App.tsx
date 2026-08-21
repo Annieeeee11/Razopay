@@ -216,7 +216,16 @@ export default function App() {
   return (
     <div className="shell">
       <header className="hero">
-        <p className="brand">SettleSure</p>
+        <p className="brand">
+          <img
+            src="/logo.svg"
+            alt=""
+            width={40}
+            height={24}
+            className="brand-mark"
+          />
+          SettleSure
+        </p>
         <h1>Settlement reconciliation</h1>
         <p className="sub">
           Payment → Settlement → Bank credit · seed {m.seed} ·{" "}
