@@ -9,6 +9,7 @@ export interface LlmResolveResult {
   matches: MatchResult[];
   exceptions: Exception[];
   enabled: boolean;
+  providerName: string;
 }
 
 interface LlmVerdict {
@@ -16,7 +17,7 @@ interface LlmVerdict {
   reasoning: string;
 }
 
-const SYSTEM_PROMPT = `You are a finance reconciliation assistant. Given one bank statement transaction and one ledger entry, decide if they represent the same underlying economic transaction.
+const SYSTEM_PROMPT = `You are a payment gateway settlement reconciliation assistant. Given one bank payout credit and one settlement record, decide if they represent the same underlying payout (matched on UTR / net amount).
 Respond with ONLY valid JSON: {"verdict":"match"|"no_match"|"unsure","reasoning":"<one short sentence>"}.
 Use "unsure" when evidence is insufficient — do not force a match.`;
 
@@ -28,7 +29,9 @@ function parseVerdict(text: string): LlmVerdict {
     return { verdict: "unsure", reasoning: "LLM returned non-JSON response" };
   }
   try {
-    const parsed = JSON.parse(trimmed.slice(jsonStart, jsonEnd + 1)) as Partial<LlmVerdict>;
+    const parsed = JSON.parse(
+      trimmed.slice(jsonStart, jsonEnd + 1),
+    ) as Partial<LlmVerdict>;
     const verdict = parsed.verdict;
     if (verdict !== "match" && verdict !== "no_match" && verdict !== "unsure") {
       return { verdict: "unsure", reasoning: "LLM verdict unparseable" };
@@ -43,8 +46,7 @@ function parseVerdict(text: string): LlmVerdict {
 }
 
 /**
- * Pass 3: resolve only the ambiguous bucket via LLM.
- * If ANTHROPIC_API_KEY is missing, leave as exceptions with a clear reason.
+ * Phase 1 LLM pass (Anthropic only). Phase 2 adds provider interface.
  */
 export async function llmResolve(
   ambiguous: AmbiguousCandidate[],
@@ -54,7 +56,7 @@ export async function llmResolve(
   const exceptions: Exception[] = [];
 
   if (ambiguous.length === 0) {
-    return { matches, exceptions, enabled: false };
+    return { matches, exceptions, enabled: false, providerName: "none" };
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -66,36 +68,25 @@ export async function llmResolve(
         reason: "ambiguous — LLM unavailable",
       });
       exceptions.push({
-        recordId: a.ledger.id,
-        source: "ledger",
+        recordId: a.settlement.settlementId,
+        source: "settlement",
         reason: "ambiguous — LLM unavailable",
       });
     }
-    return { matches, exceptions, enabled: false };
+    return { matches, exceptions, enabled: false, providerName: "none" };
   }
+
+  console.log(
+    `LLM pass: ${ambiguous.length} ambiguous pairs, provider=anthropic, est. calls=${ambiguous.length}`,
+  );
 
   const client = new Anthropic({ apiKey });
 
   for (const a of ambiguous) {
     const userContent = JSON.stringify(
       {
-        bank: {
-          id: a.bank.id,
-          date: a.bank.date,
-          amount: a.bank.amount,
-          currency: a.bank.currency,
-          description: a.bank.description,
-          referenceCode: a.bank.referenceCode,
-        },
-        ledger: {
-          id: a.ledger.id,
-          date: a.ledger.date,
-          amount: a.ledger.amount,
-          currency: a.ledger.currency,
-          memo: a.ledger.memo,
-          referenceCode: a.ledger.referenceCode,
-          category: a.ledger.category,
-        },
+        bankCredit: a.bank,
+        settlement: a.settlement,
         deterministicScore: a.score,
         deterministicReason: a.reasoning,
       },
@@ -119,8 +110,8 @@ export async function llmResolve(
 
       if (verdict.verdict === "match") {
         matches.push({
-          bankId: a.bank.id,
-          ledgerId: a.ledger.id,
+          bankCreditId: a.bank.id,
+          settlementId: a.settlement.settlementId,
           confidence: Math.max(a.score, 0.8),
           matchedBy: "llm",
           reasoning: `LLM verdict: match — ${verdict.reasoning}`,
@@ -132,8 +123,8 @@ export async function llmResolve(
           reason: `LLM verdict: no_match — ${verdict.reasoning}`,
         });
         exceptions.push({
-          recordId: a.ledger.id,
-          source: "ledger",
+          recordId: a.settlement.settlementId,
+          source: "settlement",
           reason: `LLM verdict: no_match — ${verdict.reasoning}`,
         });
       } else {
@@ -143,8 +134,8 @@ export async function llmResolve(
           reason: `LLM verdict: unsure — ${verdict.reasoning}`,
         });
         exceptions.push({
-          recordId: a.ledger.id,
-          source: "ledger",
+          recordId: a.settlement.settlementId,
+          source: "settlement",
           reason: `LLM verdict: unsure — ${verdict.reasoning}`,
         });
       }
@@ -156,12 +147,12 @@ export async function llmResolve(
         reason: `ambiguous — LLM error: ${msg}`,
       });
       exceptions.push({
-        recordId: a.ledger.id,
-        source: "ledger",
+        recordId: a.settlement.settlementId,
+        source: "settlement",
         reason: `ambiguous — LLM error: ${msg}`,
       });
     }
   }
 
-  return { matches, exceptions, enabled: true };
+  return { matches, exceptions, enabled: true, providerName: "anthropic" };
 }

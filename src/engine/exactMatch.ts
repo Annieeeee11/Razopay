@@ -1,53 +1,50 @@
 import type {
-  BankTxn,
-  LedgerEntry,
+  BankCreditRecord,
   MatchResult,
+  SettlementRecord,
 } from "../data/types.js";
 
-function sameDay(a: string, b: string): boolean {
-  return a === b;
-}
-
 /**
- * Pass 1: exact match on referenceCode + amount + currency + date.
- * Greedy 1:1 — first unused ledger wins for each bank txn.
+ * Pass 1: exact match on utr + creditedAmount === netAmount + same date + same currency.
  */
 export function exactMatch(
-  bankPool: BankTxn[],
-  ledgerPool: LedgerEntry[],
+  bankPool: BankCreditRecord[],
+  settlementPool: SettlementRecord[],
 ): {
   matches: MatchResult[];
-  remainingBank: BankTxn[];
-  remainingLedger: LedgerEntry[];
+  remainingBank: BankCreditRecord[];
+  remainingSettlements: SettlementRecord[];
 } {
-  const usedLedger = new Set<string>();
+  const usedSettlement = new Set<string>();
   const matchedBank = new Set<string>();
   const matches: MatchResult[] = [];
 
   for (const bank of bankPool) {
-    const hit = ledgerPool.find(
-      (ledger) =>
-        !usedLedger.has(ledger.id) &&
-        ledger.referenceCode === bank.referenceCode &&
-        ledger.amount === bank.amount &&
-        ledger.currency === bank.currency &&
-        sameDay(ledger.date, bank.date),
+    const hit = settlementPool.find(
+      (s) =>
+        !usedSettlement.has(s.settlementId) &&
+        s.utr === bank.utr &&
+        s.netAmount === bank.creditedAmount &&
+        s.currency === bank.currency &&
+        s.settledAt === bank.creditedAt,
     );
     if (!hit) continue;
-    usedLedger.add(hit.id);
+    usedSettlement.add(hit.settlementId);
     matchedBank.add(bank.id);
     matches.push({
-      bankId: bank.id,
-      ledgerId: hit.id,
+      bankCreditId: bank.id,
+      settlementId: hit.settlementId,
       confidence: 1.0,
       matchedBy: "exact",
-      reasoning: "Exact reference, amount, currency, and date match",
+      reasoning: "Exact UTR, net/credited amount, currency, and date match",
     });
   }
 
   return {
     matches,
     remainingBank: bankPool.filter((b) => !matchedBank.has(b.id)),
-    remainingLedger: ledgerPool.filter((l) => !usedLedger.has(l.id)),
+    remainingSettlements: settlementPool.filter(
+      (s) => !usedSettlement.has(s.settlementId),
+    ),
   };
 }

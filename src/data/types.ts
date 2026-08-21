@@ -1,20 +1,30 @@
-export interface BankTxn {
-  id: string;
-  date: string; // YYYY-MM-DD
+export interface PaymentRecord {
+  orderId: string;
+  paymentId: string;
   amount: number;
   currency: string;
-  description: string;
-  referenceCode: string;
+  status: "captured" | "failed" | "refunded";
+  createdAt: string; // YYYY-MM-DD
 }
 
-export interface LedgerEntry {
-  id: string;
-  date: string; // YYYY-MM-DD
-  amount: number;
+export interface SettlementRecord {
+  settlementId: string;
+  paymentId: string;
+  grossAmount: number;
+  fee: number;
+  tax: number;
+  netAmount: number;
+  settledAt: string; // YYYY-MM-DD
+  utr: string;
   currency: string;
-  memo: string;
-  referenceCode: string;
-  category: string;
+}
+
+export interface BankCreditRecord {
+  id: string;
+  utr: string;
+  creditedAmount: number;
+  creditedAt: string; // YYYY-MM-DD
+  currency: string;
 }
 
 export type GroundTruthLabelKind = "match" | "exception";
@@ -25,39 +35,47 @@ export type DiscrepancyClass =
   | "amount_shifted"
   | "reference_mangled"
   | "duplicate_bank"
-  | "missing_in_ledger"
-  | "missing_in_bank"
-  | "currency_mismatch";
+  | "currency_mismatch"
+  | "fee_tax_mismatch"
+  | "settlement_pending_bank"
+  | "unclaimed_bank_credit"
+  | "batched_payout";
 
 export interface GroundTruthLabel {
-  bankId: string | null;
-  ledgerId: string | null;
+  bankCreditId: string | null;
+  settlementId: string | null;
+  /** For batched_payout true matches: all settlement IDs in the batch */
+  settlementIds?: string[];
+  paymentId?: string | null;
   label: GroundTruthLabelKind;
   exceptionType?: DiscrepancyClass;
   class?: DiscrepancyClass;
 }
 
-export type MatchSource = "exact" | "fuzzy" | "llm";
+export type MatchSource = "exact" | "fuzzy" | "llm" | "split" | "human";
 
 export interface MatchResult {
-  bankId: string;
-  ledgerId: string;
+  bankCreditId: string;
+  settlementId: string;
+  /** Present for split / batched matches */
+  components?: string[];
   confidence: number;
   matchedBy: MatchSource;
   reasoning?: string;
 }
 
-export type ExceptionSource = "bank" | "ledger";
+export type ExceptionSource = "payment" | "settlement" | "bank";
 
 export interface Exception {
   recordId: string;
   source: ExceptionSource;
   reason: string;
+  exceptionType?: DiscrepancyClass;
 }
 
 export interface AmbiguousCandidate {
-  bank: BankTxn;
-  ledger: LedgerEntry;
+  bank: BankCreditRecord;
+  settlement: SettlementRecord;
   score: number;
   reasoning: string;
 }
@@ -65,6 +83,7 @@ export interface AmbiguousCandidate {
 export interface PassTiming {
   exactMs: number;
   fuzzyMs: number;
+  splitMs: number;
   llmMs: number;
   totalMs: number;
 }
@@ -75,7 +94,8 @@ export interface ReconcileResult {
   ambiguousResolved: number;
   timing: PassTiming;
   bankCount: number;
-  ledgerCount: number;
+  settlementCount: number;
+  paymentCount: number;
 }
 
 export interface ReconcileConfig {
@@ -89,12 +109,20 @@ export interface ReconcileConfig {
   weightDate: number;
   weightReference: number;
   skipLlm: boolean;
+  splitDateWindowDays: number;
+  splitMaxPool: number;
+  splitMaxCombo: number;
+  llmProvider?: "anthropic" | "ollama" | "none";
+  llmModel?: string;
+  applyCorrections?: boolean;
 }
 
 export interface MatchSourceBreakdown {
   exact: number;
   fuzzy: number;
+  split: number;
   llm: number;
+  human: number;
 }
 
 export interface ScoreReport {
@@ -115,7 +143,20 @@ export interface ScoreReport {
   timing: PassTiming;
   matchSourceBreakdown: MatchSourceBreakdown;
   bankCount: number;
-  ledgerCount: number;
+  settlementCount: number;
+  paymentCount: number;
   seed: number;
   llmEnabled: boolean;
+  llmProvider?: string;
+  suggestedFuzzyThreshold?: number;
+}
+
+export interface Correction {
+  recordId: string;
+  source: ExceptionSource;
+  decision: "accept" | "reject";
+  correctedMatchId?: string;
+  components?: string[];
+  score?: number;
+  ts: string;
 }

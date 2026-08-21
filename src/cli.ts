@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { generateAndWrite } from "./data/generate.js";
 import { reconcile } from "./engine/reconcile.js";
 import { scoreAgainstGroundTruth } from "./scoring/metrics.js";
@@ -7,6 +10,8 @@ import {
   writeReport,
   type FullReport,
 } from "./scoring/report.js";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function parseArgs(argv: string[]): {
   seed: number;
@@ -44,6 +49,9 @@ function parseArgs(argv: string[]): {
 function printHelp(): void {
   console.log(`Usage: npm run reconcile -- [options]
 
+Razorpay-style payment gateway settlement reconciliation
+(Payment → Settlement → Bank payout credit via UTR).
+
 Options:
   --seed <n>         Seeded RNG for reproducible synthetic data (default: 42)
   --generate-only    Write data/*.json and exit
@@ -52,13 +60,20 @@ Options:
 `);
 }
 
+function copyReportToDashboard(jsonPath: string): void {
+  const destDir = join(ROOT, "dashboard", "public");
+  if (!existsSync(join(ROOT, "dashboard"))) return;
+  mkdirSync(destDir, { recursive: true });
+  copyFileSync(jsonPath, join(destDir, "report.json"));
+}
+
 async function main(): Promise<void> {
   const { seed, generateOnly, skipLlm } = parseArgs(process.argv.slice(2));
 
-  console.log(`Generating synthetic dataset (seed=${seed})...`);
+  console.log(`Generating synthetic settlement dataset (seed=${seed})...`);
   const dataset = generateAndWrite(seed);
   console.log(
-    `Wrote ${dataset.bank.length} bank rows, ${dataset.ledger.length} ledger rows, ${dataset.groundTruth.length} ground-truth labels.`,
+    `Wrote ${dataset.payments.length} payments, ${dataset.settlements.length} settlements, ${dataset.bankCredits.length} bank credits, ${dataset.groundTruth.length} ground-truth labels.`,
   );
 
   if (generateOnly) {
@@ -71,12 +86,18 @@ async function main(): Promise<void> {
     `Reconciling (LLM ${llmWouldRun ? "enabled" : "disabled"})...`,
   );
 
-  const result = await reconcile(dataset.bank, dataset.ledger, { skipLlm });
+  const result = await reconcile(
+    dataset.payments,
+    dataset.settlements,
+    dataset.bankCredits,
+    { skipLlm },
+  );
   const metrics = scoreAgainstGroundTruth(
     result,
     dataset.groundTruth,
     seed,
     llmWouldRun,
+    llmWouldRun ? "anthropic" : "none",
   );
 
   const full: FullReport = {
@@ -87,6 +108,7 @@ async function main(): Promise<void> {
   };
 
   const { jsonPath, mdPath, markdown } = writeReport(full);
+  copyReportToDashboard(jsonPath);
 
   console.log("");
   console.log(markdown);

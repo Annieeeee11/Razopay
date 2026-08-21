@@ -2,16 +2,16 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
-  BankTxn,
+  BankCreditRecord,
   DiscrepancyClass,
   GroundTruthLabel,
-  LedgerEntry,
+  PaymentRecord,
+  SettlementRecord,
 } from "./types.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 export const DATA_DIR = join(ROOT, "data");
 
-/** Mulberry32 seeded PRNG — reproducible across runs. */
 export function createRng(seed: number): () => number {
   let t = seed >>> 0;
   return () => {
@@ -20,10 +20,6 @@ export function createRng(seed: number): () => number {
     r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-function pick<T>(rng: () => number, items: readonly T[]): T {
-  return items[Math.floor(rng() * items.length)]!;
 }
 
 function randInt(rng: () => number, min: number, max: number): number {
@@ -48,350 +44,414 @@ function pad(n: number, width: number): string {
   return String(n).padStart(width, "0");
 }
 
-const MERCHANTS = [
-  "ACME SUPPLIES",
-  "NORTHWIND LOGISTICS",
-  "CONTOSO CLOUD",
-  "FABRIKAM PAYROLL",
-  "TAILSPIN TRAVEL",
-  "ADVENTURE WORKS",
-  "WIDGET CO",
-  "BLUE YONDER",
-] as const;
+function makeUtr(rng: () => number, index: number): string {
+  const suffix = Array.from({ length: 6 }, () =>
+    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(rng() * 32)],
+  ).join("");
+  return `UTR${pad(index + 1, 6)}${suffix}`;
+}
 
-const CATEGORIES = [
-  "ops_expense",
-  "payroll",
-  "saas",
-  "travel",
-  "inventory",
-  "utilities",
-] as const;
-
-interface EconomicEvent {
-  date: string;
-  amount: number;
-  currency: string;
-  referenceCode: string;
-  description: string;
-  category: string;
-  class: DiscrepancyClass;
+function feeTax(gross: number, rng: () => number): { fee: number; tax: number; net: number } {
+  const fee = roundMoney(gross * (0.015 + rng() * 0.01));
+  const tax = roundMoney(fee * 0.18);
+  const net = roundMoney(gross - fee - tax);
+  return { fee, tax, net };
 }
 
 export interface GeneratedDataset {
-  bank: BankTxn[];
-  ledger: LedgerEntry[];
+  payments: PaymentRecord[];
+  settlements: SettlementRecord[];
+  bankCredits: BankCreditRecord[];
   groundTruth: GroundTruthLabel[];
   seed: number;
 }
 
-function makeBaseEvent(
-  rng: () => number,
-  index: number,
-  cls: DiscrepancyClass,
-): EconomicEvent {
-  const baseDate = new Date(Date.UTC(2025, 0, 1 + randInt(rng, 0, 90)));
-  const amount = roundMoney(25 + rng() * 4975);
-  const merchant = pick(rng, MERCHANTS);
-  // High-entropy refs so sequential events do not fuzzy-collide
-  const suffix = Array.from({ length: 4 }, () =>
-    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(rng() * 32)],
-  ).join("");
-  const ref = `REF${pad(index + 1, 5)}${suffix}`;
-  return {
-    date: formatDate(baseDate),
-    amount,
-    currency: "USD",
-    referenceCode: ref,
-    description: `${merchant} ${ref}`,
-    category: pick(rng, CATEGORIES),
-    class: cls,
-  };
-}
-
-function mangleReference(rng: () => number, ref: string): string {
-  const mode = randInt(rng, 0, 2);
-  if (mode === 0) {
-    // Truncate last 1–2 chars
-    return ref.slice(0, Math.max(4, ref.length - randInt(rng, 1, 2)));
-  }
-  if (mode === 1) {
-    // Insert hyphen / space reformatting
-    return `${ref.slice(0, 3)}-${ref.slice(3)}`;
-  }
-  // Drop a middle character
-  const i = randInt(rng, 3, ref.length - 2);
-  return ref.slice(0, i) + ref.slice(i + 1);
-}
-
 export function generateDataset(seed = 42): GeneratedDataset {
   const rng = createRng(seed);
-  const bank: BankTxn[] = [];
-  const ledger: LedgerEntry[] = [];
+  const payments: PaymentRecord[] = [];
+  const settlements: SettlementRecord[] = [];
+  const bankCredits: BankCreditRecord[] = [];
   const groundTruth: GroundTruthLabel[] = [];
 
+  let paySeq = 0;
+  let setSeq = 0;
   let bankSeq = 0;
-  let ledgerSeq = 0;
+  let eventIndex = 0;
 
-  const nextBankId = () => `BANK-${pad(++bankSeq, 4)}`;
-  const nextLedgerId = () => `LEDGER-${pad(++ledgerSeq, 4)}`;
+  const nextPaymentId = () => `pay_${pad(++paySeq, 4)}`;
+  const nextOrderId = () => `order_${pad(paySeq, 4)}`;
+  const nextSettlementId = () => `setl_${pad(++setSeq, 4)}`;
+  const nextBankId = () => `bank_${pad(++bankSeq, 4)}`;
 
   const classPlan: Array<{ cls: DiscrepancyClass; count: number }> = [
-    { cls: "clean", count: 25 },
-    { cls: "date_shifted", count: 8 },
-    { cls: "amount_shifted", count: 6 },
-    { cls: "reference_mangled", count: 6 },
-    { cls: "duplicate_bank", count: 3 },
-    { cls: "missing_in_ledger", count: 4 },
-    { cls: "missing_in_bank", count: 4 },
-    { cls: "currency_mismatch", count: 3 },
+    { cls: "clean", count: 22 },
+    { cls: "date_shifted", count: 7 },
+    { cls: "amount_shifted", count: 5 },
+    { cls: "reference_mangled", count: 5 },
+    { cls: "duplicate_bank", count: 2 },
+    { cls: "currency_mismatch", count: 2 },
+    { cls: "fee_tax_mismatch", count: 3 },
+    { cls: "settlement_pending_bank", count: 4 },
+    { cls: "unclaimed_bank_credit", count: 4 },
+    { cls: "batched_payout", count: 3 },
   ];
 
-  let eventIndex = 0;
+  function pushPayment(amount: number, currency: string, date: string): PaymentRecord {
+    const paymentId = nextPaymentId();
+    const p: PaymentRecord = {
+      orderId: nextOrderId(),
+      paymentId,
+      amount,
+      currency,
+      status: "captured",
+      createdAt: date,
+    };
+    payments.push(p);
+    return p;
+  }
+
+  function mangleUtr(rng: () => number, utr: string): string {
+    const mode = randInt(rng, 0, 2);
+    if (mode === 0) return utr.slice(0, Math.max(8, utr.length - randInt(rng, 1, 2)));
+    if (mode === 1) return `${utr.slice(0, 6)}-${utr.slice(6)}`;
+    const i = randInt(rng, 4, utr.length - 2);
+    return utr.slice(0, i) + utr.slice(i + 1);
+  }
 
   for (const { cls, count } of classPlan) {
     for (let i = 0; i < count; i++) {
-      const event = makeBaseEvent(rng, eventIndex++, cls);
+      const date = formatDate(new Date(Date.UTC(2025, 0, 1 + randInt(rng, 0, 90))));
+      const gross = roundMoney(100 + rng() * 4900);
+      const currency = "INR";
+      const utr = makeUtr(rng, eventIndex++);
+      const { fee, tax, net } = feeTax(gross, rng);
 
       switch (cls) {
         case "clean": {
+          const pay = pushPayment(gross, currency, date);
+          const settlementId = nextSettlementId();
           const bankId = nextBankId();
-          const ledgerId = nextLedgerId();
-          bank.push({
-            id: bankId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            description: event.description,
-            referenceCode: event.referenceCode,
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: net,
+            settledAt: date,
+            utr,
+            currency,
           });
-          ledger.push({
-            id: ledgerId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            memo: event.description,
-            referenceCode: event.referenceCode,
-            category: event.category,
+          bankCredits.push({
+            id: bankId,
+            utr,
+            creditedAmount: net,
+            creditedAt: date,
+            currency,
           });
           groundTruth.push({
-            bankId,
-            ledgerId,
+            bankCreditId: bankId,
+            settlementId,
+            paymentId: pay.paymentId,
             label: "match",
             class: cls,
           });
           break;
         }
         case "date_shifted": {
+          const pay = pushPayment(gross, currency, date);
+          const settlementId = nextSettlementId();
           const bankId = nextBankId();
-          const ledgerId = nextLedgerId();
           const shift = randInt(rng, 1, 3) * (rng() < 0.5 ? -1 : 1);
-          bank.push({
-            id: bankId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            description: event.description,
-            referenceCode: event.referenceCode,
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: net,
+            settledAt: addDays(date, shift),
+            utr,
+            currency,
           });
-          ledger.push({
-            id: ledgerId,
-            date: addDays(event.date, shift),
-            amount: event.amount,
-            currency: event.currency,
-            memo: event.description,
-            referenceCode: event.referenceCode,
-            category: event.category,
+          bankCredits.push({
+            id: bankId,
+            utr,
+            creditedAmount: net,
+            creditedAt: date,
+            currency,
           });
           groundTruth.push({
-            bankId,
-            ledgerId,
+            bankCreditId: bankId,
+            settlementId,
+            paymentId: pay.paymentId,
             label: "match",
             class: cls,
           });
           break;
         }
         case "amount_shifted": {
+          const pay = pushPayment(gross, currency, date);
+          const settlementId = nextSettlementId();
           const bankId = nextBankId();
-          const ledgerId = nextLedgerId();
-          // Small fee/FX delta within fuzzy tolerance (±2% or ±0.50)
           const deltaSign = rng() < 0.5 ? -1 : 1;
           const delta = roundMoney(
-            Math.min(
-              event.amount * 0.015,
-              Math.max(0.25, event.amount * 0.005 + rng() * 0.4),
-            ) * deltaSign,
+            Math.min(net * 0.015, Math.max(0.25, net * 0.005 + rng() * 0.4)) *
+              deltaSign,
           );
-          bank.push({
-            id: bankId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            description: event.description,
-            referenceCode: event.referenceCode,
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: net,
+            settledAt: date,
+            utr,
+            currency,
           });
-          ledger.push({
-            id: ledgerId,
-            date: event.date,
-            amount: roundMoney(event.amount + delta),
-            currency: event.currency,
-            memo: `${event.description} (fee adj)`,
-            referenceCode: event.referenceCode,
-            category: event.category,
+          bankCredits.push({
+            id: bankId,
+            utr,
+            creditedAmount: roundMoney(net + delta),
+            creditedAt: date,
+            currency,
           });
           groundTruth.push({
-            bankId,
-            ledgerId,
+            bankCreditId: bankId,
+            settlementId,
+            paymentId: pay.paymentId,
             label: "match",
             class: cls,
           });
           break;
         }
         case "reference_mangled": {
+          const pay = pushPayment(gross, currency, date);
+          const settlementId = nextSettlementId();
           const bankId = nextBankId();
-          const ledgerId = nextLedgerId();
-          bank.push({
-            id: bankId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            description: event.description,
-            referenceCode: event.referenceCode,
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: net,
+            settledAt: date,
+            utr: mangleUtr(rng, utr),
+            currency,
           });
-          ledger.push({
-            id: ledgerId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            memo: event.description,
-            referenceCode: mangleReference(rng, event.referenceCode),
-            category: event.category,
+          bankCredits.push({
+            id: bankId,
+            utr,
+            creditedAmount: net,
+            creditedAt: date,
+            currency,
           });
           groundTruth.push({
-            bankId,
-            ledgerId,
+            bankCreditId: bankId,
+            settlementId,
+            paymentId: pay.paymentId,
             label: "match",
             class: cls,
           });
           break;
         }
         case "duplicate_bank": {
-          // Primary pair is a clean match; duplicate bank row is a true exception
+          const pay = pushPayment(gross, currency, date);
+          const settlementId = nextSettlementId();
           const bankId = nextBankId();
-          const ledgerId = nextLedgerId();
           const dupBankId = nextBankId();
-          bank.push({
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: net,
+            settledAt: date,
+            utr,
+            currency,
+          });
+          bankCredits.push({
             id: bankId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            description: event.description,
-            referenceCode: event.referenceCode,
+            utr,
+            creditedAmount: net,
+            creditedAt: date,
+            currency,
           });
-          bank.push({
+          bankCredits.push({
             id: dupBankId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            description: `${event.description} (DUP)`,
-            referenceCode: event.referenceCode,
-          });
-          ledger.push({
-            id: ledgerId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            memo: event.description,
-            referenceCode: event.referenceCode,
-            category: event.category,
+            utr,
+            creditedAmount: net,
+            creditedAt: date,
+            currency,
           });
           groundTruth.push({
-            bankId,
-            ledgerId,
+            bankCreditId: bankId,
+            settlementId,
+            paymentId: pay.paymentId,
             label: "match",
             class: "clean",
           });
           groundTruth.push({
-            bankId: dupBankId,
-            ledgerId: null,
+            bankCreditId: dupBankId,
+            settlementId: null,
             label: "exception",
             exceptionType: "duplicate_bank",
             class: cls,
           });
           break;
         }
-        case "missing_in_ledger": {
-          const bankId = nextBankId();
-          bank.push({
-            id: bankId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            description: event.description,
-            referenceCode: event.referenceCode,
-          });
-          groundTruth.push({
-            bankId,
-            ledgerId: null,
-            label: "exception",
-            exceptionType: "missing_in_ledger",
-            class: cls,
-          });
-          break;
-        }
-        case "missing_in_bank": {
-          const ledgerId = nextLedgerId();
-          ledger.push({
-            id: ledgerId,
-            date: event.date,
-            amount: event.amount,
-            currency: event.currency,
-            memo: event.description,
-            referenceCode: event.referenceCode,
-            category: event.category,
-          });
-          groundTruth.push({
-            bankId: null,
-            ledgerId,
-            label: "exception",
-            exceptionType: "missing_in_bank",
-            class: cls,
-          });
-          break;
-        }
         case "currency_mismatch": {
+          const pay = pushPayment(gross, "INR", date);
+          const settlementId = nextSettlementId();
           const bankId = nextBankId();
-          const ledgerId = nextLedgerId();
-          bank.push({
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: net,
+            settledAt: date,
+            utr,
+            currency: "INR",
+          });
+          bankCredits.push({
             id: bankId,
-            date: event.date,
-            amount: event.amount,
+            utr,
+            creditedAmount: net,
+            creditedAt: date,
             currency: "USD",
-            description: event.description,
-            referenceCode: event.referenceCode,
           });
-          ledger.push({
-            id: ledgerId,
-            date: event.date,
-            amount: event.amount,
-            currency: "EUR",
-            memo: event.description,
-            referenceCode: event.referenceCode,
-            category: event.category,
-          });
-          // Same economic event but must NOT auto-match — true exception on both sides
           groundTruth.push({
-            bankId,
-            ledgerId: null,
+            bankCreditId: bankId,
+            settlementId: null,
             label: "exception",
             exceptionType: "currency_mismatch",
             class: cls,
           });
           groundTruth.push({
-            bankId: null,
-            ledgerId,
+            bankCreditId: null,
+            settlementId,
+            paymentId: pay.paymentId,
             label: "exception",
             exceptionType: "currency_mismatch",
+            class: cls,
+          });
+          break;
+        }
+        case "fee_tax_mismatch": {
+          const pay = pushPayment(gross, currency, date);
+          const settlementId = nextSettlementId();
+          // Deliberately break netAmount identity
+          const badNet = roundMoney(net + 15 + rng() * 40);
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: badNet,
+            settledAt: date,
+            utr,
+            currency,
+          });
+          // No bank credit — integrity failure is the exception
+          groundTruth.push({
+            bankCreditId: null,
+            settlementId,
+            paymentId: pay.paymentId,
+            label: "exception",
+            exceptionType: "fee_tax_mismatch",
+            class: cls,
+          });
+          break;
+        }
+        case "settlement_pending_bank": {
+          const pay = pushPayment(gross, currency, date);
+          const settlementId = nextSettlementId();
+          settlements.push({
+            settlementId,
+            paymentId: pay.paymentId,
+            grossAmount: gross,
+            fee,
+            tax,
+            netAmount: net,
+            settledAt: date,
+            utr,
+            currency,
+          });
+          groundTruth.push({
+            bankCreditId: null,
+            settlementId,
+            paymentId: pay.paymentId,
+            label: "exception",
+            exceptionType: "settlement_pending_bank",
+            class: cls,
+          });
+          break;
+        }
+        case "unclaimed_bank_credit": {
+          const bankId = nextBankId();
+          bankCredits.push({
+            id: bankId,
+            utr,
+            creditedAmount: net,
+            creditedAt: date,
+            currency,
+          });
+          groundTruth.push({
+            bankCreditId: bankId,
+            settlementId: null,
+            label: "exception",
+            exceptionType: "unclaimed_bank_credit",
+            class: cls,
+          });
+          break;
+        }
+        case "batched_payout": {
+          // 2–4 settlements sharing one bank credit (sum of nets)
+          const n = randInt(rng, 2, 4);
+          const settlementIds: string[] = [];
+          let sumNet = 0;
+          const batchDate = date;
+          const batchUtr = utr;
+          for (let k = 0; k < n; k++) {
+            const g = roundMoney(80 + rng() * 900);
+            const ft = feeTax(g, rng);
+            const pay = pushPayment(g, currency, batchDate);
+            const settlementId = nextSettlementId();
+            settlementIds.push(settlementId);
+            sumNet = roundMoney(sumNet + ft.net);
+            settlements.push({
+              settlementId,
+              paymentId: pay.paymentId,
+              grossAmount: g,
+              fee: ft.fee,
+              tax: ft.tax,
+              netAmount: ft.net,
+              settledAt: addDays(batchDate, randInt(rng, 0, 2)),
+              // Settlements in a batch often lack per-line UTR; use placeholder unique UTRs
+              // Bank credit carries the batch UTR — Phase 4 matches on amount sum
+              utr: `${batchUtr}_S${k + 1}`,
+              currency,
+            });
+          }
+          const bankId = nextBankId();
+          bankCredits.push({
+            id: bankId,
+            utr: batchUtr,
+            creditedAmount: sumNet,
+            creditedAt: addDays(batchDate, randInt(rng, 0, 3)),
+            currency,
+          });
+          groundTruth.push({
+            bankCreditId: bankId,
+            settlementId: settlementIds[0]!,
+            settlementIds,
+            label: "match",
             class: cls,
           });
           break;
@@ -400,13 +460,13 @@ export function generateDataset(seed = 42): GeneratedDataset {
     }
   }
 
-  if (bank.length < 50 || ledger.length < 50) {
+  if (settlements.length < 50 || bankCredits.length < 50) {
     throw new Error(
-      `Generated dataset too small: bank=${bank.length}, ledger=${ledger.length}`,
+      `Dataset too small: settlements=${settlements.length}, bankCredits=${bankCredits.length}`,
     );
   }
 
-  return { bank, ledger, groundTruth, seed };
+  return { payments, settlements, bankCredits, groundTruth, seed };
 }
 
 export function writeDataset(
@@ -415,12 +475,16 @@ export function writeDataset(
 ): void {
   mkdirSync(dataDir, { recursive: true });
   writeFileSync(
-    join(dataDir, "bank_statement.json"),
-    JSON.stringify(dataset.bank, null, 2) + "\n",
+    join(dataDir, "payments.json"),
+    JSON.stringify(dataset.payments, null, 2) + "\n",
   );
   writeFileSync(
-    join(dataDir, "internal_ledger.json"),
-    JSON.stringify(dataset.ledger, null, 2) + "\n",
+    join(dataDir, "settlements.json"),
+    JSON.stringify(dataset.settlements, null, 2) + "\n",
+  );
+  writeFileSync(
+    join(dataDir, "bank_credits.json"),
+    JSON.stringify(dataset.bankCredits, null, 2) + "\n",
   );
   writeFileSync(
     join(dataDir, "ground_truth.json"),

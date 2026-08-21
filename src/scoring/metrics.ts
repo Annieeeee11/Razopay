@@ -7,8 +7,17 @@ import type {
   ScoreReport,
 } from "../data/types.js";
 
-function pairKey(bankId: string, ledgerId: string): string {
-  return `${bankId}||${ledgerId}`;
+function sortedSetKey(ids: string[]): string {
+  return [...ids].sort().join(",");
+}
+
+function matchEqualsGt(m: MatchResult, g: GroundTruthLabel): boolean {
+  if (!g.bankCreditId || m.bankCreditId !== g.bankCreditId) return false;
+  if (g.settlementIds && g.settlementIds.length > 1) {
+    const comps = m.components ?? [m.settlementId];
+    return sortedSetKey(comps) === sortedSetKey(g.settlementIds);
+  }
+  return Boolean(g.settlementId && m.settlementId === g.settlementId);
 }
 
 export function scoreAgainstGroundTruth(
@@ -16,46 +25,45 @@ export function scoreAgainstGroundTruth(
   groundTruth: GroundTruthLabel[],
   seed: number,
   llmEnabled: boolean,
+  llmProvider = "none",
 ): ScoreReport {
-  const trueMatches = groundTruth.filter(
-    (g) => g.label === "match" && g.bankId && g.ledgerId,
-  );
-  const trueMatchKeys = new Set(
-    trueMatches.map((g) => pairKey(g.bankId!, g.ledgerId!)),
-  );
-
-  const predicted = result.matches;
-  const predictedKeys = new Set(
-    predicted.map((m) => pairKey(m.bankId, m.ledgerId)),
-  );
+  const trueMatches = groundTruth.filter((g) => g.label === "match");
 
   let truePositive = 0;
   let falsePositive = 0;
-  for (const m of predicted) {
-    if (trueMatchKeys.has(pairKey(m.bankId, m.ledgerId))) truePositive++;
-    else falsePositive++;
+  const claimedGt = new Set<number>();
+
+  for (const m of result.matches) {
+    const idx = trueMatches.findIndex(
+      (g, i) => !claimedGt.has(i) && matchEqualsGt(m, g),
+    );
+    if (idx >= 0) {
+      truePositive++;
+      claimedGt.add(idx);
+    } else {
+      falsePositive++;
+    }
   }
 
-  let falseNegative = 0;
-  for (const key of trueMatchKeys) {
-    if (!predictedKeys.has(key)) falseNegative++;
-  }
+  const falseNegative = trueMatches.length - truePositive;
 
   const precision =
-    predicted.length === 0 ? 1 : truePositive / predicted.length;
+    result.matches.length === 0 ? 1 : truePositive / result.matches.length;
   const recall =
     trueMatches.length === 0 ? 1 : truePositive / trueMatches.length;
-  // FP rate among predicted matches (controller-relevant)
   const falsePositiveRate =
-    predicted.length === 0 ? 0 : falsePositive / predicted.length;
+    result.matches.length === 0 ? 0 : falsePositive / result.matches.length;
 
-  // Exception accuracy: of records the engine flagged, % that are true exceptions
   const trueExceptionIds = new Set<string>();
   for (const g of groundTruth) {
     if (g.label !== "exception") continue;
-    if (g.bankId) trueExceptionIds.add(`bank:${g.bankId}`);
-    if (g.ledgerId) trueExceptionIds.add(`ledger:${g.ledgerId}`);
+    if (g.bankCreditId) trueExceptionIds.add(`bank:${g.bankCreditId}`);
+    if (g.settlementId) trueExceptionIds.add(`settlement:${g.settlementId}`);
   }
+
+  // Batched payouts that are unmatched should not count as "true exceptions"
+  // for settlement components — they are true matches awaiting split.
+  // Exception accuracy uses only explicit exception labels.
 
   const predictedExceptionIds = new Set(
     result.exceptions.map((e) => `${e.source}:${e.recordId}`),
@@ -71,37 +79,40 @@ export function scoreAgainstGroundTruth(
       ? 1
       : correctlyFlaggedExceptions / predictedExceptionIds.size;
 
-  const totalRecords = result.bankCount + result.ledgerCount;
+  const totalRecords = result.bankCount + result.settlementCount;
   const totalSec = Math.max(result.timing.totalMs / 1000, 1e-9);
-  const throughputRecordsPerSec = totalRecords / totalSec;
 
   const matchSourceBreakdown: MatchSourceBreakdown = {
-    exact: predicted.filter((m) => m.matchedBy === "exact").length,
-    fuzzy: predicted.filter((m) => m.matchedBy === "fuzzy").length,
-    llm: predicted.filter((m) => m.matchedBy === "llm").length,
+    exact: result.matches.filter((m) => m.matchedBy === "exact").length,
+    fuzzy: result.matches.filter((m) => m.matchedBy === "fuzzy").length,
+    split: result.matches.filter((m) => m.matchedBy === "split").length,
+    llm: result.matches.filter((m) => m.matchedBy === "llm").length,
+    human: result.matches.filter((m) => m.matchedBy === "human").length,
   };
 
   return {
-    matchRate: recall, // % of true matches found (recall on match class)
+    matchRate: recall,
     precision,
     recall,
     falsePositiveRate,
     exceptionAccuracy,
     trueMatchCount: trueMatches.length,
-    predictedMatchCount: predicted.length,
+    predictedMatchCount: result.matches.length,
     truePositive,
     falsePositive,
     falseNegative,
     trueExceptionCount: trueExceptionIds.size,
     predictedExceptionCount: predictedExceptionIds.size,
     correctlyFlaggedExceptions,
-    throughputRecordsPerSec: Number(throughputRecordsPerSec.toFixed(2)),
+    throughputRecordsPerSec: Number((totalRecords / totalSec).toFixed(2)),
     timing: result.timing,
     matchSourceBreakdown,
     bankCount: result.bankCount,
-    ledgerCount: result.ledgerCount,
+    settlementCount: result.settlementCount,
+    paymentCount: result.paymentCount,
     seed,
     llmEnabled,
+    llmProvider,
   };
 }
 
@@ -109,14 +120,14 @@ export function pct(n: number): string {
   return `${(n * 100).toFixed(2)}%`;
 }
 
-/** Pure helper for unit tests: score arbitrary predicted matches vs GT. */
 export function scoreMatches(
   matches: MatchResult[],
   exceptions: Exception[],
   groundTruth: GroundTruthLabel[],
   meta: {
     bankCount: number;
-    ledgerCount: number;
+    settlementCount: number;
+    paymentCount: number;
     timing: ReconcileResult["timing"];
     seed: number;
     llmEnabled: boolean;
@@ -129,7 +140,8 @@ export function scoreMatches(
       ambiguousResolved: matches.filter((m) => m.matchedBy === "llm").length,
       timing: meta.timing,
       bankCount: meta.bankCount,
-      ledgerCount: meta.ledgerCount,
+      settlementCount: meta.settlementCount,
+      paymentCount: meta.paymentCount,
     },
     groundTruth,
     meta.seed,

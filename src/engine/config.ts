@@ -11,6 +11,9 @@ export const DEFAULT_CONFIG: ReconcileConfig = {
   weightDate: 0.3,
   weightReference: 0.3,
   skipLlm: false,
+  splitDateWindowDays: 5,
+  splitMaxPool: 25,
+  splitMaxCombo: 6,
 };
 
 export function amountTolerance(

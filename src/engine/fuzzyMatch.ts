@@ -1,14 +1,13 @@
 import type {
   AmbiguousCandidate,
-  BankTxn,
+  BankCreditRecord,
   Exception,
-  LedgerEntry,
   MatchResult,
   ReconcileConfig,
+  SettlementRecord,
 } from "../data/types.js";
 import { DEFAULT_CONFIG, amountTolerance } from "./config.js";
 
-/** Normalize reference codes for similarity: uppercase, strip non-alphanumeric. */
 export function normalizeReference(ref: string): string {
   return ref.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
@@ -38,7 +37,6 @@ export function levenshtein(a: string, b: string): number {
   return prev[n] ?? 0;
 }
 
-/** Similarity in [0, 1] from normalized Levenshtein distance. */
 export function referenceSimilarity(a: string, b: string): number {
   const na = normalizeReference(a);
   const nb = normalizeReference(b);
@@ -59,10 +57,10 @@ function daysApart(a: string, b: string): number {
 
 function amountScore(
   bankAmount: number,
-  ledgerAmount: number,
+  settlementAmount: number,
   config: ReconcileConfig,
 ): number {
-  const diff = Math.abs(bankAmount - ledgerAmount);
+  const diff = Math.abs(bankAmount - settlementAmount);
   const tol = amountTolerance(bankAmount, config);
   if (diff === 0) return 1;
   if (diff > tol) return 0;
@@ -71,22 +69,21 @@ function amountScore(
 
 function dateScore(
   bankDate: string,
-  ledgerDate: string,
+  settlementDate: string,
   config: ReconcileConfig,
 ): number {
-  const days = daysApart(bankDate, ledgerDate);
+  const days = daysApart(bankDate, settlementDate);
   if (days === 0) return 1;
-  // Inclusive window: day == dateWindowDays must still score > 0
   if (days > config.dateWindowDays) return 0;
   return 1 - days / (config.dateWindowDays + 1);
 }
 
 export function scorePair(
-  bank: BankTxn,
-  ledger: LedgerEntry,
+  bank: BankCreditRecord,
+  settlement: SettlementRecord,
   config: ReconcileConfig = DEFAULT_CONFIG,
 ): { score: number; reason: string; currencyMismatch: boolean } {
-  if (bank.currency !== ledger.currency) {
+  if (bank.currency !== settlement.currency) {
     return {
       score: 0,
       reason: "currency mismatch, not auto-resolved",
@@ -94,11 +91,10 @@ export function scorePair(
     };
   }
 
-  const a = amountScore(bank.amount, ledger.amount, config);
-  const d = dateScore(bank.date, ledger.date, config);
-  const r = referenceSimilarity(bank.referenceCode, ledger.referenceCode);
+  const a = amountScore(bank.creditedAmount, settlement.netAmount, config);
+  const d = dateScore(bank.creditedAt, settlement.settledAt, config);
+  const r = referenceSimilarity(bank.utr, settlement.utr);
 
-  // Hard gate: must be inside date window and amount tolerance to be a candidate
   if (a === 0 || d === 0) {
     return {
       score: 0,
@@ -113,67 +109,60 @@ export function scorePair(
     config.weightReference * r;
 
   const parts: string[] = [];
-  if (a < 1) parts.push(`amount delta within tolerance (score ${a.toFixed(2)})`);
-  if (d < 1) parts.push(`date off by ${daysApart(bank.date, ledger.date).toFixed(0)}d`);
-  if (r < 1) parts.push(`reference similarity ${r.toFixed(2)}`);
+  if (a < 1)
+    parts.push(`amount delta within tolerance (score ${a.toFixed(2)})`);
+  if (d < 1)
+    parts.push(
+      `date off by ${daysApart(bank.creditedAt, settlement.settledAt).toFixed(0)}d`,
+    );
+  if (r < 1) parts.push(`UTR similarity ${r.toFixed(2)}`);
   if (parts.length === 0) parts.push("near-exact fuzzy agreement");
 
-  return {
-    score,
-    reason: parts.join("; "),
-    currencyMismatch: false,
-  };
+  return { score, reason: parts.join("; "), currencyMismatch: false };
 }
 
 export interface FuzzyMatchResult {
   matches: MatchResult[];
   ambiguous: AmbiguousCandidate[];
   exceptions: Exception[];
-  remainingBank: BankTxn[];
-  remainingLedger: LedgerEntry[];
+  remainingBank: BankCreditRecord[];
+  remainingSettlements: SettlementRecord[];
 }
 
-/**
- * Pass 2: fuzzy match on remaining pool.
- * Accept >= 0.75; 0.50–0.75 → ambiguous; else exception with reason.
- */
 export function fuzzyMatch(
-  bankPool: BankTxn[],
-  ledgerPool: LedgerEntry[],
+  bankPool: BankCreditRecord[],
+  settlementPool: SettlementRecord[],
   config: ReconcileConfig = DEFAULT_CONFIG,
 ): FuzzyMatchResult {
   const matches: MatchResult[] = [];
   const ambiguous: AmbiguousCandidate[] = [];
   const exceptions: Exception[] = [];
 
-  const usedLedger = new Set<string>();
+  const usedSettlement = new Set<string>();
   const resolvedBank = new Set<string>();
 
-  // Currency-mismatch bank rows: flag immediately (still try to note best ledger)
   type Scored = {
-    bank: BankTxn;
-    ledger: LedgerEntry;
+    bank: BankCreditRecord;
+    settlement: SettlementRecord;
     score: number;
     reason: string;
     currencyMismatch: boolean;
   };
 
   const candidates: Scored[] = [];
-  // High enough to block chance collisions between unrelated missing rows
   const minRefSimilarity = 0.65;
 
   for (const bank of bankPool) {
-    for (const ledger of ledgerPool) {
-      // Explicit currency-mismatch detection (same economic identity, no FX)
+    for (const settlement of settlementPool) {
       if (
-        bank.currency !== ledger.currency &&
-        bank.referenceCode === ledger.referenceCode &&
-        bank.date === ledger.date &&
-        bank.amount === ledger.amount
+        bank.currency !== settlement.currency &&
+        bank.utr === settlement.utr &&
+        bank.creditedAt === settlement.settledAt &&
+        bank.creditedAmount === settlement.netAmount
       ) {
         candidates.push({
           bank,
-          ledger,
+          settlement,
           score: 0,
           reason: "currency mismatch, not auto-resolved",
           currencyMismatch: true,
@@ -181,46 +170,57 @@ export function fuzzyMatch(
         continue;
       }
 
-      const { score, reason, currencyMismatch } = scorePair(bank, ledger, config);
+      const { score, reason, currencyMismatch } = scorePair(
+        bank,
+        settlement,
+        config,
+      );
       if (currencyMismatch) continue;
 
-      const refSim = referenceSimilarity(bank.referenceCode, ledger.referenceCode);
-      // Reject weak-reference cross-matches even when amount/date align by chance
+      const refSim = referenceSimilarity(bank.utr, settlement.utr);
       if (refSim < minRefSimilarity) continue;
 
       if (score >= config.ambiguousLow) {
-        candidates.push({ bank, ledger, score, reason, currencyMismatch: false });
+        candidates.push({
+          bank,
+          settlement,
+          score,
+          reason,
+          currencyMismatch: false,
+        });
       }
     }
   }
 
-  // Prefer highest scores first (greedy 1:1)
   candidates.sort((a, b) => b.score - a.score);
 
   const currencyMismatchBank = new Set<string>();
-  const currencyMismatchLedger = new Set<string>();
+  const currencyMismatchSettlement = new Set<string>();
 
   for (const c of candidates) {
     if (c.currencyMismatch) {
-      // Same ref + date + amount but different currency → both sides exception
       if (
-        c.bank.referenceCode === c.ledger.referenceCode &&
-        c.bank.date === c.ledger.date &&
-        c.bank.amount === c.ledger.amount
+        c.bank.utr === c.settlement.utr &&
+        c.bank.creditedAt === c.settlement.settledAt &&
+        c.bank.creditedAmount === c.settlement.netAmount
       ) {
         currencyMismatchBank.add(c.bank.id);
-        currencyMismatchLedger.add(c.ledger.id);
+        currencyMismatchSettlement.add(c.settlement.settlementId);
       }
       continue;
     }
-    if (resolvedBank.has(c.bank.id) || usedLedger.has(c.ledger.id)) continue;
+    if (
+      resolvedBank.has(c.bank.id) ||
+      usedSettlement.has(c.settlement.settlementId)
+    )
+      continue;
 
     if (c.score >= config.fuzzyAcceptThreshold) {
       resolvedBank.add(c.bank.id);
-      usedLedger.add(c.ledger.id);
+      usedSettlement.add(c.settlement.settlementId);
       matches.push({
-        bankId: c.bank.id,
-        ledgerId: c.ledger.id,
+        bankCreditId: c.bank.id,
+        settlementId: c.settlement.settlementId,
         confidence: Number(c.score.toFixed(4)),
         matchedBy: "fuzzy",
         reasoning: c.reason,
@@ -230,10 +230,10 @@ export function fuzzyMatch(
       c.score < config.ambiguousHigh
     ) {
       resolvedBank.add(c.bank.id);
-      usedLedger.add(c.ledger.id);
+      usedSettlement.add(c.settlement.settlementId);
       ambiguous.push({
         bank: c.bank,
-        ledger: c.ledger,
+        settlement: c.settlement,
         score: Number(c.score.toFixed(4)),
         reasoning: c.reason,
       });
@@ -247,6 +247,7 @@ export function fuzzyMatch(
         recordId: bank.id,
         source: "bank",
         reason: "currency mismatch, not auto-resolved",
+        exceptionType: "currency_mismatch",
       });
       resolvedBank.add(bank.id);
       continue;
@@ -259,23 +260,24 @@ export function fuzzyMatch(
     resolvedBank.add(bank.id);
   }
 
-  for (const ledger of ledgerPool) {
-    if (usedLedger.has(ledger.id)) continue;
-    if (currencyMismatchLedger.has(ledger.id)) {
+  for (const settlement of settlementPool) {
+    if (usedSettlement.has(settlement.settlementId)) continue;
+    if (currencyMismatchSettlement.has(settlement.settlementId)) {
       exceptions.push({
-        recordId: ledger.id,
-        source: "ledger",
+        recordId: settlement.settlementId,
+        source: "settlement",
         reason: "currency mismatch, not auto-resolved",
+        exceptionType: "currency_mismatch",
       });
-      usedLedger.add(ledger.id);
+      usedSettlement.add(settlement.settlementId);
       continue;
     }
     exceptions.push({
-      recordId: ledger.id,
-      source: "ledger",
+      recordId: settlement.settlementId,
+      source: "settlement",
       reason: "no counterpart within date/amount window",
     });
-    usedLedger.add(ledger.id);
+    usedSettlement.add(settlement.settlementId);
   }
 
   return {
@@ -283,6 +285,8 @@ export function fuzzyMatch(
     ambiguous,
     exceptions,
     remainingBank: bankPool.filter((b) => !resolvedBank.has(b.id)),
-    remainingLedger: ledgerPool.filter((l) => !usedLedger.has(l.id)),
+    remainingSettlements: settlementPool.filter(
+      (s) => !usedSettlement.has(s.settlementId),
+    ),
   };
 }

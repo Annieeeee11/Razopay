@@ -6,79 +6,83 @@ import type {
   MatchResult,
 } from "../src/data/types.js";
 
-const timing = { exactMs: 1, fuzzyMs: 2, llmMs: 0, totalMs: 3 };
+const timing = {
+  exactMs: 1,
+  fuzzyMs: 2,
+  splitMs: 0,
+  llmMs: 0,
+  totalMs: 3,
+};
 
 describe("metrics", () => {
   const groundTruth: GroundTruthLabel[] = [
-    { bankId: "B1", ledgerId: "L1", label: "match", class: "clean" },
-    { bankId: "B2", ledgerId: "L2", label: "match", class: "clean" },
     {
-      bankId: "B3",
-      ledgerId: null,
-      label: "exception",
-      exceptionType: "missing_in_ledger",
+      bankCreditId: "B1",
+      settlementId: "S1",
+      label: "match",
+      class: "clean",
     },
     {
-      bankId: null,
-      ledgerId: "L3",
+      bankCreditId: "B2",
+      settlementId: "S2",
+      label: "match",
+      class: "clean",
+    },
+    {
+      bankCreditId: "B3",
+      settlementId: null,
       label: "exception",
-      exceptionType: "missing_in_bank",
+      exceptionType: "unclaimed_bank_credit",
+    },
+    {
+      bankCreditId: null,
+      settlementId: "S3",
+      label: "exception",
+      exceptionType: "settlement_pending_bank",
     },
   ];
 
   it("computes precision, recall, and FP rate separately", () => {
     const matches: MatchResult[] = [
-      { bankId: "B1", ledgerId: "L1", confidence: 1, matchedBy: "exact" },
-      { bankId: "B3", ledgerId: "L3", confidence: 0.8, matchedBy: "fuzzy" }, // FP
+      { bankCreditId: "B1", settlementId: "S1", confidence: 1, matchedBy: "exact" },
+      { bankCreditId: "B3", settlementId: "S3", confidence: 0.8, matchedBy: "fuzzy" },
     ];
     const exceptions: Exception[] = [
       { recordId: "B2", source: "bank", reason: "missed" },
-      { recordId: "L2", source: "ledger", reason: "missed" },
-      {
-        recordId: "B3",
-        source: "bank",
-        reason: "wrongly also excepted? shouldn't",
-      },
+      { recordId: "S2", source: "settlement", reason: "missed" },
+      { recordId: "S3", source: "settlement", reason: "no bank" },
     ];
 
-    // Fix: B3 was matched so shouldn't be in exceptions for this toy — use clean set
-    const cleanExceptions: Exception[] = [
-      { recordId: "B2", source: "bank", reason: "missed" },
-      { recordId: "L2", source: "ledger", reason: "missed" },
-      { recordId: "L3", source: "ledger", reason: "no bank" },
-    ];
-
-    const report = scoreMatches(matches, cleanExceptions, groundTruth, {
+    const report = scoreMatches(matches, exceptions, groundTruth, {
       bankCount: 3,
-      ledgerCount: 3,
+      settlementCount: 3,
+      paymentCount: 3,
       timing,
       seed: 1,
       llmEnabled: false,
     });
 
-    // TP=1 (B1-L1), FP=1 (B3-L3), FN=1 (B2-L2)
     expect(report.truePositive).toBe(1);
     expect(report.falsePositive).toBe(1);
     expect(report.falseNegative).toBe(1);
     expect(report.precision).toBeCloseTo(0.5);
     expect(report.recall).toBeCloseTo(0.5);
     expect(report.falsePositiveRate).toBeCloseTo(0.5);
-    expect(report.matchRate).toBe(report.recall);
-    void exceptions;
   });
 
   it("scores perfect prediction", () => {
     const matches: MatchResult[] = [
-      { bankId: "B1", ledgerId: "L1", confidence: 1, matchedBy: "exact" },
-      { bankId: "B2", ledgerId: "L2", confidence: 1, matchedBy: "exact" },
+      { bankCreditId: "B1", settlementId: "S1", confidence: 1, matchedBy: "exact" },
+      { bankCreditId: "B2", settlementId: "S2", confidence: 1, matchedBy: "exact" },
     ];
     const exceptions: Exception[] = [
-      { recordId: "B3", source: "bank", reason: "missing_in_ledger" },
-      { recordId: "L3", source: "ledger", reason: "missing_in_bank" },
+      { recordId: "B3", source: "bank", reason: "unclaimed" },
+      { recordId: "S3", source: "settlement", reason: "pending" },
     ];
     const report = scoreMatches(matches, exceptions, groundTruth, {
       bankCount: 3,
-      ledgerCount: 3,
+      settlementCount: 3,
+      paymentCount: 3,
       timing,
       seed: 1,
       llmEnabled: false,
