@@ -1,20 +1,22 @@
 # Razopay — Payment Gateway Settlement Reconciliation
 
-Razorpay-shaped **3-way settlement reconciliation**: Payments → Settlements (gross/fee/tax/net + UTR) → Bank payout credits. Deterministic exact → fuzzy → split passes resolve the batch; optional BYOK/Ollama LLM and human corrections handle the residual.
+Razorpay-shaped **3-way settlement reconciliation**: Payments → Settlements (gross/fee/tax/net + UTR) → Bank payout credits. Deterministic exact → fuzzy → split passes resolve most of the batch; adversarial near-duplicates and boundary UTR mangles feed the LLM/human residual.
 
 **Seed 42 headline metrics** (`npm run reconcile -- --seed 42 --skip-llm`):
 
-| Precision | Recall | FP rate | Split matches |
+| Precision | Recall | FP rate | Exact / Fuzzy / Split |
 | ---: | ---: | ---: | ---: |
-| 100% | 100% | 0% | 3 |
+| ~97.7% | ~91.3% | ~2.3% | 22 / 18 / 2–3 |
+
+With `--apply-corrections` (falls back to `data/demo_corrections.json`): human matches appear in the source breakdown and recall rises into the mid-90s. With an LLM provider, ambiguous near-dups resolve via the LLM tier.
 
 ```bash
 npm install
 npm run reconcile -- --seed 42 --skip-llm
-npm run dashboard   # http://localhost:5173 — local viz over output/report.json
+npm run dashboard   # http://localhost:5173
 ```
 
-Docker (zero local setup):
+Docker:
 
 ```bash
 docker build -t razopay .
@@ -25,10 +27,12 @@ docker run --rm razopay
 
 ## Pipeline
 
-1. **Payments** — gateway order/payment captures  
+1. **Payments** — gateway captures  
 2. **Settlements** — fee/tax identity + UTR  
-3. **Bank credits** — UTR join on `creditedAmount` ≈ `netAmount`  
-4. Passes: integrity → exact → fuzzy → **split** (batched payouts) → LLM → human corrections  
+3. **Bank credits** — UTR join on net ≈ credited  
+4. Passes: integrity → exact → fuzzy → split → LLM → human corrections  
+
+Adversarial classes include near-duplicate decoys, boundary reference mangles, decoy subset-sums, and unresolvable noise — scored by `ambiguityLevel` (`clear` / `boundary` / `decoy` / `unresolvable`).
 
 ## Quick start
 
@@ -37,58 +41,32 @@ npm install
 npm run reconcile -- --seed 42 --skip-llm
 ```
 
-Outputs: `data/*.json`, `output/report.json`, `output/report.md` (also copied to `dashboard/public/report.json`).
-
 ### Options
 
 | Flag | Meaning |
 | --- | --- |
-| `--seed <n>` | Reproducible synthetic batch (default `42`) |
+| `--seed <n>` | Reproducible batch (default `42`) |
 | `--generate-only` | Write data files and exit |
 | `--skip-llm` | Force no LLM |
 | `--llm-provider <…>` | `anthropic` \| `ollama` \| `none` |
-| `--llm-model <name>` | Ollama model name (default `llama3.2`) |
-| `--apply-corrections` | Apply human corrections from `output/corrections.json` |
+| `--llm-model <name>` | Ollama model (default `llama3.2`) |
+| `--apply-corrections` | Apply `output/corrections.json` or `data/demo_corrections.json` |
+| `--runs <n>` | Multi-seed robustness (seeds `seed..seed+n-1`) |
+| `--compare-llm` | Side-by-side LLM on vs off ablation |
 
-### Optional LLM pass (BYOK / local)
+### Optional LLM pass
 
-Selection order: `--llm-provider` → `ANTHROPIC_API_KEY` → Ollama at `localhost:11434` → none.
-
-```bash
-npm run reconcile -- --seed 42 --skip-llm
-export ANTHROPIC_API_KEY=sk-ant-...
-npm run reconcile -- --seed 42 --llm-provider anthropic
-npm run reconcile -- --seed 42 --llm-provider ollama --llm-model llama3.2
-```
-
-Before calls: `LLM pass: N ambiguous pairs, provider=<x>, est. calls=N`.
-
-## Human corrections
-
-Dashboard Accept / Reject → `output/corrections.json`. Re-apply:
+Selection: `--llm-provider` → `ANTHROPIC_API_KEY` → Ollama → none.
 
 ```bash
+npm run reconcile -- --seed 42 --compare-llm
+npm run reconcile -- --seed 42 --runs 5 --skip-llm
 npm run reconcile -- --seed 42 --skip-llm --apply-corrections
 ```
 
-## Dashboard
-
-```bash
-npm run reconcile -- --seed 42 --skip-llm
-npm run dashboard
-```
-
-CLI is the source of truth; the dashboard is a local visualization layer.
-
 ## Metrics (never blended)
 
-| Metric | Meaning |
-| --- | --- |
-| **Match rate / Recall** | Of true matches, % found |
-| **Precision** | Of predicted matches, % correct |
-| **False positive rate** | Of predicted matches, % wrong |
-| **Exception accuracy** | Of flagged exceptions, % that are true exceptions |
-| **Throughput** | records/sec |
+Overall precision, recall, and FP rate are reported separately, plus **Accuracy by case difficulty** (clear / boundary / decoy / unresolvable).
 
 ## Tests & CI
 
@@ -98,11 +76,9 @@ npm run reconcile -- --seed 42 --skip-llm
 npm run check-baseline
 ```
 
-CI runs the same on every push and fails if precision/recall regress below `baselines/seed42.json`.
-
 ## Known limitations
 
-- Split matching is bounded (pool ≤25, combo ≤6) for demo scale
+- Split matching is bounded (pool ≤25, combo ≤6)
 - Ambiguous multi-solution batches are not auto-picked
 - No FX conversion
-- Duplicate bank credits: first claim wins
+- Near-dup / boundary cases need LLM or human for full recall

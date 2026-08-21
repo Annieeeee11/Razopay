@@ -1,7 +1,7 @@
 {
   "seed": 42,
-  "minPrecision": 1.0,
-  "minRecall": 0.95,
-  "maxFalsePositiveRate": 0.0,
-  "minMatchRate": 0.95
+  "minPrecision": 0.9,
+  "minRecall": 0.88,
+  "maxFalsePositiveRate": 0.05,
+  "minMatchRate": 0.88
 }

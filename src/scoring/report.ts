@@ -1,7 +1,12 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Exception, MatchResult, ScoreReport } from "../data/types.js";
+import type {
+  AmbiguityLevel,
+  Exception,
+  MatchResult,
+  ScoreReport,
+} from "../data/types.js";
 import { pct } from "./metrics.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -20,6 +25,7 @@ export const KNOWN_LIMITATIONS = [
   "No FX conversion — currency mismatches are never auto-resolved.",
   "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity only.",
   "Duplicate bank credits: first claim wins; extras become exceptions.",
+  "Near-duplicate decoys and boundary UTR mangles are intentional hard cases for LLM/human tiers.",
 ];
 
 export function formatMarkdown(report: FullReport): string {
@@ -83,6 +89,91 @@ export function formatMarkdown(report: FullReport): string {
   lines.push(`| LLM | ${m.timing.llmMs.toFixed(2)} |`);
   lines.push(`| Total | ${m.timing.totalMs.toFixed(2)} |`);
   lines.push("");
+
+  lines.push("## Accuracy by case difficulty");
+  lines.push("");
+  lines.push("| Difficulty | Match rate | Precision | Deferred | Notes |");
+  lines.push("| --- | --- | --- | --- | --- |");
+  const order: AmbiguityLevel[] = [
+    "clear",
+    "boundary",
+    "decoy",
+    "unresolvable",
+  ];
+  for (const level of order) {
+    const s = m.byAmbiguityLevel[level];
+    if (!s) continue;
+    const deferred =
+      s.deferredTotal != null && s.deferredTotal > 0
+        ? pct((s.correctlyDeferred ?? 0) / s.deferredTotal)
+        : "—";
+    const mr =
+      s.trueMatchCount === 0 && (level === "decoy" || level === "unresolvable")
+        ? "—"
+        : pct(s.matchRate);
+    const pr =
+      s.trueMatchCount === 0 && s.predictedMatchCount === 0
+        ? "—"
+        : pct(s.precision);
+    lines.push(
+      `| ${level[0]!.toUpperCase()}${level.slice(1)} | ${mr} | ${pr} | ${deferred} | ${s.notes} |`,
+    );
+  }
+  lines.push("");
+
+  if (m.robustness) {
+    const r = m.robustness;
+    lines.push("## Robustness across seeds");
+    lines.push("");
+    lines.push(`Seeds: ${r.seeds.join(", ")}`);
+    lines.push("");
+    lines.push("| Metric | Mean | Min | Max |");
+    lines.push("| --- | ---: | ---: | ---: |");
+    lines.push(
+      `| Match rate | ${pct(r.matchRate.mean)} | ${pct(r.matchRate.min)} | ${pct(r.matchRate.max)} |`,
+    );
+    lines.push(
+      `| Precision | ${pct(r.precision.mean)} | ${pct(r.precision.min)} | ${pct(r.precision.max)} |`,
+    );
+    lines.push(
+      `| Recall | ${pct(r.recall.mean)} | ${pct(r.recall.min)} | ${pct(r.recall.max)} |`,
+    );
+    lines.push(
+      `| FP rate | ${pct(r.falsePositiveRate.mean)} | ${pct(r.falsePositiveRate.min)} | ${pct(r.falsePositiveRate.max)} |`,
+    );
+    lines.push("");
+  }
+
+  if (m.llmAblation) {
+    const a = m.llmAblation;
+    lines.push("## LLM ablation");
+    lines.push("");
+    if (!a.providerAvailable) {
+      lines.push(
+        "_No LLM provider available — with-LLM run fell back to none._",
+      );
+      lines.push("");
+    }
+    lines.push("| | With LLM | Without LLM |");
+    lines.push("| --- | ---: | ---: |");
+    lines.push(
+      `| Match rate | ${pct(a.withLlm.matchRate)} | ${pct(a.withoutLlm.matchRate)} |`,
+    );
+    lines.push(
+      `| Precision | ${pct(a.withLlm.precision)} | ${pct(a.withoutLlm.precision)} |`,
+    );
+    lines.push(
+      `| Recall | ${pct(a.withLlm.recall)} | ${pct(a.withoutLlm.recall)} |`,
+    );
+    lines.push(
+      `| FP rate | ${pct(a.withLlm.falsePositiveRate)} | ${pct(a.withoutLlm.falsePositiveRate)} |`,
+    );
+    lines.push(
+      `| LLM matches | ${a.withLlm.llmMatches} | ${a.withoutLlm.llmMatches} |`,
+    );
+    lines.push(`| Provider | ${a.withLlm.provider} | none |`);
+    lines.push("");
+  }
 
   if (m.suggestedFuzzyThreshold != null) {
     lines.push("## Suggested fuzzy threshold (from human corrections)");

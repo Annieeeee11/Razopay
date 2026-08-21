@@ -3,13 +3,19 @@ import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateAndWrite } from "./data/generate.js";
-import type { ReconcileConfig } from "./data/types.js";
+import type {
+  LlmAblationSummary,
+  ReconcileConfig,
+  RobustnessSummary,
+  ScoreReport,
+} from "./data/types.js";
 import {
-  loadCorrections,
+  loadCorrectionsWithFallback,
   suggestFuzzyThreshold,
 } from "./engine/corrections.js";
 import { reconcile } from "./engine/reconcile.js";
 import type { LlmProviderChoice } from "./engine/llmResolve.js";
+import { selectLlmProvider } from "./engine/llmResolve.js";
 import { scoreAgainstGroundTruth } from "./scoring/metrics.js";
 import {
   KNOWN_LIMITATIONS,
@@ -26,6 +32,8 @@ function parseArgs(argv: string[]): {
   llmProvider?: LlmProviderChoice;
   llmModel: string;
   applyCorrections: boolean;
+  runs: number;
+  compareLlm: boolean;
 } {
   let seed = 42;
   let generateOnly = false;
@@ -33,6 +41,8 @@ function parseArgs(argv: string[]): {
   let llmProvider: LlmProviderChoice | undefined;
   let llmModel = "llama3.2";
   let applyCorrections = false;
+  let runs = 1;
+  let compareLlm = false;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -62,13 +72,30 @@ function parseArgs(argv: string[]): {
       llmModel = next;
     } else if (arg === "--apply-corrections") {
       applyCorrections = true;
+    } else if (arg === "--runs") {
+      const next = argv[++i];
+      if (!next || Number.isNaN(Number(next)) || Number(next) < 1) {
+        throw new Error("--runs requires a positive integer");
+      }
+      runs = Number(next);
+    } else if (arg === "--compare-llm") {
+      compareLlm = true;
     } else if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
     }
   }
 
-  return { seed, generateOnly, skipLlm, llmProvider, llmModel, applyCorrections };
+  return {
+    seed,
+    generateOnly,
+    skipLlm,
+    llmProvider,
+    llmModel,
+    applyCorrections,
+    runs,
+    compareLlm,
+  };
 }
 
 function printHelp(): void {
@@ -82,9 +109,10 @@ Options:
   --generate-only                 Write data/*.json and exit
   --skip-llm                      Force no LLM (same as --llm-provider none)
   --llm-provider <anthropic|ollama|none>
-                                  Explicit provider (else: API key → Ollama → none)
   --llm-model <name>              Ollama model (default: llama3.2)
-  --apply-corrections             Apply output/corrections.json overrides
+  --apply-corrections             Apply corrections (output/ or data/demo_)
+  --runs <n>                      Run seeds seed..seed+n-1; report mean±range
+  --compare-llm                   Ablate LLM on vs off for the same seed
   -h, --help                      Show help
 `);
 }
@@ -96,57 +124,182 @@ function copyReportToDashboard(jsonPath: string): void {
   copyFileSync(jsonPath, join(destDir, "report.json"));
 }
 
-async function main(): Promise<void> {
-  const {
-    seed,
-    generateOnly,
-    skipLlm,
-    llmProvider,
-    llmModel,
-    applyCorrections,
-  } = parseArgs(process.argv.slice(2));
-
-  console.log(`Generating synthetic settlement dataset (seed=${seed})...`);
-  const dataset = generateAndWrite(seed);
-  console.log(
-    `Wrote ${dataset.payments.length} payments, ${dataset.settlements.length} settlements, ${dataset.bankCredits.length} bank credits, ${dataset.groundTruth.length} ground-truth labels.`,
-  );
-
-  if (generateOnly) {
-    console.log("Done (--generate-only).");
-    return;
-  }
-
-  const corrections = applyCorrections ? loadCorrections() : [];
-  if (applyCorrections) {
-    console.log(`Loaded ${corrections.length} human correction(s).`);
-  }
-
-  const cfg: Partial<ReconcileConfig> = {
-    skipLlm,
-    llmProvider,
-    llmModel,
-    applyCorrections,
+function meanMinMax(values: number[]): { mean: number; min: number; max: number } {
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  return {
+    mean: Number(mean.toFixed(4)),
+    min: Math.min(...values),
+    max: Math.max(...values),
   };
+}
 
-  console.log("Reconciling...");
+async function runOnce(options: {
+  seed: number;
+  skipLlm: boolean;
+  llmProvider?: LlmProviderChoice;
+  llmModel: string;
+  corrections: import("./data/types.js").Correction[];
+}): Promise<{ metrics: ScoreReport; full: FullReport; providerName: string }> {
+  const dataset = generateAndWrite(options.seed);
+  const cfg: Partial<ReconcileConfig> = {
+    skipLlm: options.skipLlm,
+    llmProvider: options.llmProvider,
+    llmModel: options.llmModel,
+  };
   const result = await reconcile(
     dataset.payments,
     dataset.settlements,
     dataset.bankCredits,
     cfg,
-    corrections,
+    options.corrections,
   );
-
-  const llmEnabled = result.timing.llmMs > 0 && !skipLlm && llmProvider !== "none";
-
+  const { name: providerName } = await selectLlmProvider({
+    skipLlm: options.skipLlm,
+    llmProvider: options.llmProvider,
+    llmModel: options.llmModel,
+  });
+  const llmEnabled = providerName !== "none" && !options.skipLlm;
   const metrics = scoreAgainstGroundTruth(
     result,
     dataset.groundTruth,
-    seed,
+    options.seed,
     llmEnabled,
-    llmProvider ?? (process.env.ANTHROPIC_API_KEY ? "anthropic" : "auto"),
+    providerName,
   );
+  return {
+    metrics,
+    providerName,
+    full: {
+      metrics,
+      matches: result.matches,
+      exceptions: result.exceptions,
+      knownLimitations: KNOWN_LIMITATIONS,
+    },
+  };
+}
+
+async function main(): Promise<void> {
+  const args = parseArgs(process.argv.slice(2));
+
+  if (args.generateOnly) {
+    console.log(`Generating synthetic settlement dataset (seed=${args.seed})...`);
+    const dataset = generateAndWrite(args.seed);
+    console.log(
+      `Wrote ${dataset.payments.length} payments, ${dataset.settlements.length} settlements, ${dataset.bankCredits.length} bank credits, ${dataset.groundTruth.length} ground-truth labels, ${dataset.demoCorrections.length} demo corrections.`,
+    );
+    console.log("Done (--generate-only).");
+    return;
+  }
+
+  const corrections = args.applyCorrections
+    ? loadCorrectionsWithFallback()
+    : [];
+  if (args.applyCorrections) {
+    console.log(`Loaded ${corrections.length} human correction(s).`);
+  }
+
+  if (args.runs > 1) {
+    console.log(`Running robustness suite: ${args.runs} seeds starting at ${args.seed}...`);
+    const seeds: number[] = [];
+    const matchRates: number[] = [];
+    const precisions: number[] = [];
+    const recalls: number[] = [];
+    const fps: number[] = [];
+    let lastFull: FullReport | null = null;
+
+    for (let i = 0; i < args.runs; i++) {
+      const s = args.seed + i;
+      seeds.push(s);
+      const { metrics, full } = await runOnce({
+        seed: s,
+        skipLlm: args.skipLlm,
+        llmProvider: args.llmProvider,
+        llmModel: args.llmModel,
+        corrections: i === 0 ? corrections : [],
+      });
+      matchRates.push(metrics.matchRate);
+      precisions.push(metrics.precision);
+      recalls.push(metrics.recall);
+      fps.push(metrics.falsePositiveRate);
+      lastFull = full;
+      console.log(
+        `  seed ${s}: match=${(metrics.matchRate * 100).toFixed(1)}% P=${(metrics.precision * 100).toFixed(1)}% R=${(metrics.recall * 100).toFixed(1)}% FP=${(metrics.falsePositiveRate * 100).toFixed(1)}%`,
+      );
+    }
+
+    const robustness: RobustnessSummary = {
+      seeds,
+      matchRate: meanMinMax(matchRates),
+      precision: meanMinMax(precisions),
+      recall: meanMinMax(recalls),
+      falsePositiveRate: meanMinMax(fps),
+    };
+    lastFull!.metrics.robustness = robustness;
+    const { jsonPath, mdPath, markdown } = writeReport(lastFull!);
+    copyReportToDashboard(jsonPath);
+    console.log("");
+    console.log(markdown);
+    console.log(`Wrote ${jsonPath}`);
+    console.log(`Wrote ${mdPath}`);
+    return;
+  }
+
+  if (args.compareLlm) {
+    console.log(`LLM ablation for seed ${args.seed}...`);
+    const withRun = await runOnce({
+      seed: args.seed,
+      skipLlm: false,
+      llmProvider: args.llmProvider === "none" ? undefined : args.llmProvider,
+      llmModel: args.llmModel,
+      corrections,
+    });
+    const withoutRun = await runOnce({
+      seed: args.seed,
+      skipLlm: true,
+      llmProvider: "none",
+      llmModel: args.llmModel,
+      corrections,
+    });
+    const ablation: LlmAblationSummary = {
+      providerAvailable: withRun.providerName !== "none",
+      withLlm: {
+        matchRate: withRun.metrics.matchRate,
+        precision: withRun.metrics.precision,
+        recall: withRun.metrics.recall,
+        falsePositiveRate: withRun.metrics.falsePositiveRate,
+        llmMatches: withRun.metrics.matchSourceBreakdown.llm,
+        provider: withRun.providerName,
+      },
+      withoutLlm: {
+        matchRate: withoutRun.metrics.matchRate,
+        precision: withoutRun.metrics.precision,
+        recall: withoutRun.metrics.recall,
+        falsePositiveRate: withoutRun.metrics.falsePositiveRate,
+        llmMatches: withoutRun.metrics.matchSourceBreakdown.llm,
+      },
+    };
+    withRun.full.metrics.llmAblation = ablation;
+    const suggested = suggestFuzzyThreshold(corrections);
+    if (suggested != null) {
+      withRun.full.metrics.suggestedFuzzyThreshold = suggested;
+    }
+    const { jsonPath, mdPath, markdown } = writeReport(withRun.full);
+    copyReportToDashboard(jsonPath);
+    console.log("");
+    console.log(markdown);
+    console.log(`Wrote ${jsonPath}`);
+    console.log(`Wrote ${mdPath}`);
+    return;
+  }
+
+  console.log(`Generating + reconciling (seed=${args.seed})...`);
+  const { metrics, full } = await runOnce({
+    seed: args.seed,
+    skipLlm: args.skipLlm,
+    llmProvider: args.llmProvider,
+    llmModel: args.llmModel,
+    corrections,
+  });
 
   const suggested = suggestFuzzyThreshold(corrections);
   if (suggested != null) {
@@ -156,16 +309,8 @@ async function main(): Promise<void> {
     );
   }
 
-  const full: FullReport = {
-    metrics,
-    matches: result.matches,
-    exceptions: result.exceptions,
-    knownLimitations: KNOWN_LIMITATIONS,
-  };
-
   const { jsonPath, mdPath, markdown } = writeReport(full);
   copyReportToDashboard(jsonPath);
-
   console.log("");
   console.log(markdown);
   console.log(`Wrote ${jsonPath}`);

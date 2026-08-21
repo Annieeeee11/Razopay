@@ -29,27 +29,36 @@ export interface BankCreditRecord {
 
 export type GroundTruthLabelKind = "match" | "exception";
 
+export type AmbiguityLevel = "clear" | "boundary" | "decoy" | "unresolvable";
+
 export type DiscrepancyClass =
   | "clean"
   | "date_shifted"
   | "amount_shifted"
   | "reference_mangled"
+  | "reference_mangled_boundary"
+  | "near_duplicate_decoy"
   | "duplicate_bank"
   | "currency_mismatch"
   | "fee_tax_mismatch"
   | "settlement_pending_bank"
   | "unclaimed_bank_credit"
-  | "batched_payout";
+  | "batched_payout"
+  | "batched_payout_ambiguous"
+  | "unresolvable_noise";
 
 export interface GroundTruthLabel {
   bankCreditId: string | null;
   settlementId: string | null;
   /** For batched_payout true matches: all settlement IDs in the batch */
   settlementIds?: string[];
+  /** Near-dup decoy settlement that must not be matched */
+  decoySettlementId?: string;
   paymentId?: string | null;
   label: GroundTruthLabelKind;
   exceptionType?: DiscrepancyClass;
   class?: DiscrepancyClass;
+  ambiguityLevel: AmbiguityLevel;
 }
 
 export type MatchSource = "exact" | "fuzzy" | "llm" | "split" | "human";
@@ -125,6 +134,46 @@ export interface MatchSourceBreakdown {
   human: number;
 }
 
+export interface AmbiguitySliceMetrics {
+  matchRate: number;
+  precision: number;
+  recall: number;
+  trueMatchCount: number;
+  predictedMatchCount: number;
+  truePositive: number;
+  falsePositive: number;
+  correctlyDeferred?: number;
+  deferredTotal?: number;
+  notes: string;
+}
+
+export interface RobustnessSummary {
+  seeds: number[];
+  matchRate: { mean: number; min: number; max: number };
+  precision: { mean: number; min: number; max: number };
+  recall: { mean: number; min: number; max: number };
+  falsePositiveRate: { mean: number; min: number; max: number };
+}
+
+export interface LlmAblationSummary {
+  withLlm: {
+    matchRate: number;
+    precision: number;
+    recall: number;
+    falsePositiveRate: number;
+    llmMatches: number;
+    provider: string;
+  };
+  withoutLlm: {
+    matchRate: number;
+    precision: number;
+    recall: number;
+    falsePositiveRate: number;
+    llmMatches: number;
+  };
+  providerAvailable: boolean;
+}
+
 export interface ScoreReport {
   matchRate: number;
   precision: number;
@@ -149,6 +198,9 @@ export interface ScoreReport {
   llmEnabled: boolean;
   llmProvider?: string;
   suggestedFuzzyThreshold?: number;
+  byAmbiguityLevel: Record<AmbiguityLevel, AmbiguitySliceMetrics>;
+  robustness?: RobustnessSummary;
+  llmAblation?: LlmAblationSummary;
 }
 
 export interface Correction {

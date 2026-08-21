@@ -21,24 +21,28 @@ describe("metrics", () => {
       settlementId: "S1",
       label: "match",
       class: "clean",
+      ambiguityLevel: "clear",
     },
     {
       bankCreditId: "B2",
       settlementId: "S2",
       label: "match",
       class: "clean",
+      ambiguityLevel: "clear",
     },
     {
       bankCreditId: "B3",
       settlementId: null,
       label: "exception",
       exceptionType: "unclaimed_bank_credit",
+      ambiguityLevel: "unresolvable",
     },
     {
       bankCreditId: null,
       settlementId: "S3",
       label: "exception",
       exceptionType: "settlement_pending_bank",
+      ambiguityLevel: "unresolvable",
     },
   ];
 
@@ -68,6 +72,7 @@ describe("metrics", () => {
     expect(report.precision).toBeCloseTo(0.5);
     expect(report.recall).toBeCloseTo(0.5);
     expect(report.falsePositiveRate).toBeCloseTo(0.5);
+    expect(report.byAmbiguityLevel.clear.trueMatchCount).toBe(2);
   });
 
   it("scores perfect prediction", () => {

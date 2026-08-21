@@ -8,12 +8,22 @@ import type {
   ReconcileResult,
   SettlementRecord,
 } from "../data/types.js";
-import { DEFAULT_CONFIG } from "./config.js";
+import { amountTolerance, DEFAULT_CONFIG } from "./config.js";
 import { exactMatch } from "./exactMatch.js";
 import { fuzzyMatch } from "./fuzzyMatch.js";
 import { integrityCheck } from "./integrityCheck.js";
 import { llmResolve } from "./llmResolve.js";
 import { splitMatch } from "./splitMatch.js";
+
+function daysApart(a: string, b: string): number {
+  return (
+    Math.abs(
+      new Date(`${a}T12:00:00Z`).getTime() -
+        new Date(`${b}T12:00:00Z`).getTime(),
+    ) /
+    (1000 * 60 * 60 * 24)
+  );
+}
 
 function reasonForLeftoverBank(
   bank: BankCreditRecord,
@@ -30,6 +40,25 @@ function reasonForLeftoverBank(
       exceptionType: "batched_payout",
     };
   }
+
+  const cfg = DEFAULT_CONFIG;
+  const anyPlausible = settlements.some((s) => {
+    if (s.currency !== bank.currency) return false;
+    const days = daysApart(s.settledAt, bank.creditedAt);
+    if (days > cfg.dateWindowDays) return false;
+    const tol = amountTolerance(bank.creditedAmount, cfg);
+    return Math.abs(s.netAmount - bank.creditedAmount) <= tol;
+  });
+
+  if (!anyPlausible) {
+    return {
+      recordId: bank.id,
+      source: "bank",
+      reason: "no plausible counterpart in window",
+      exceptionType: "unresolvable_noise",
+    };
+  }
+
   return {
     recordId: bank.id,
     source: "bank",

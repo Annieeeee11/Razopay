@@ -1,4 +1,6 @@
 import type {
+  AmbiguityLevel,
+  AmbiguitySliceMetrics,
   Exception,
   GroundTruthLabel,
   MatchResult,
@@ -13,11 +15,144 @@ function sortedSetKey(ids: string[]): string {
 
 function matchEqualsGt(m: MatchResult, g: GroundTruthLabel): boolean {
   if (!g.bankCreditId || m.bankCreditId !== g.bankCreditId) return false;
-  if (g.settlementIds && g.settlementIds.length > 1) {
+  if (g.settlementIds && g.settlementIds.length > 1 && g.label === "match") {
     const comps = m.components ?? [m.settlementId];
     return sortedSetKey(comps) === sortedSetKey(g.settlementIds);
   }
   return Boolean(g.settlementId && m.settlementId === g.settlementId);
+}
+
+function emptySlice(notes: string): AmbiguitySliceMetrics {
+  return {
+    matchRate: 0,
+    precision: 1,
+    recall: 1,
+    trueMatchCount: 0,
+    predictedMatchCount: 0,
+    truePositive: 0,
+    falsePositive: 0,
+    notes,
+  };
+}
+
+function scoreSlice(
+  level: AmbiguityLevel,
+  result: ReconcileResult,
+  groundTruth: GroundTruthLabel[],
+): AmbiguitySliceMetrics {
+  const levelGt = groundTruth.filter((g) => g.ambiguityLevel === level);
+  const trueMatches = levelGt.filter((g) => g.label === "match");
+  const deferredRows = levelGt.filter(
+    (g) => g.label === "exception" || level === "decoy" || level === "unresolvable",
+  );
+
+  // Predicted matches whose GT pair (if any) is at this level, or wrong matches
+  // involving bank credits tagged at this level.
+  const levelBankIds = new Set(
+    levelGt.map((g) => g.bankCreditId).filter(Boolean) as string[],
+  );
+  const levelSettlementIds = new Set(
+    levelGt.map((g) => g.settlementId).filter(Boolean) as string[],
+  );
+
+  const predicted = result.matches.filter(
+    (m) =>
+      levelBankIds.has(m.bankCreditId) ||
+      levelSettlementIds.has(m.settlementId) ||
+      (m.components?.some((id) => levelSettlementIds.has(id)) ?? false),
+  );
+
+  let truePositive = 0;
+  let falsePositive = 0;
+  const claimed = new Set<number>();
+
+  for (const m of predicted) {
+    const idx = trueMatches.findIndex(
+      (g, i) => !claimed.has(i) && matchEqualsGt(m, g),
+    );
+    if (idx >= 0) {
+      truePositive++;
+      claimed.add(idx);
+    } else {
+      // Wrong match involving this level's records
+      falsePositive++;
+    }
+  }
+
+  const precision =
+    predicted.length === 0 ? 1 : truePositive / predicted.length;
+  const recall =
+    trueMatches.length === 0 ? 1 : truePositive / trueMatches.length;
+
+  // Correctly deferred: exception GT rows not incorrectly auto-matched
+  let correctlyDeferred = 0;
+  let deferredTotal = 0;
+  if (level === "decoy" || level === "unresolvable") {
+    const exceptionRows = levelGt.filter((g) => g.label === "exception");
+    deferredTotal = exceptionRows.length;
+    for (const g of exceptionRows) {
+      const wronglyMatched =
+        (g.bankCreditId &&
+          result.matches.some((m) => m.bankCreditId === g.bankCreditId)) ||
+        (g.settlementId &&
+          result.matches.some(
+            (m) =>
+              m.settlementId === g.settlementId ||
+              m.components?.includes(g.settlementId!),
+          ));
+      // Near-dup decoy: matching the decoy settlement is wrong; matching true bank is OK for the match row
+      if (g.exceptionType === "near_duplicate_decoy" && g.settlementId) {
+        const decoyPicked = result.matches.some(
+          (m) =>
+            m.settlementId === g.settlementId ||
+            m.components?.includes(g.settlementId!),
+        );
+        if (!decoyPicked) correctlyDeferred++;
+        continue;
+      }
+      if (!wronglyMatched) correctlyDeferred++;
+    }
+    // Also: decoy match rows that were NOT matched to the decoy (true match or deferred OK)
+    for (const g of trueMatches) {
+      if (!g.decoySettlementId) continue;
+      deferredTotal++;
+      const pickedDecoy = result.matches.some(
+        (m) =>
+          m.bankCreditId === g.bankCreditId &&
+          (m.settlementId === g.decoySettlementId ||
+            m.components?.includes(g.decoySettlementId!)),
+      );
+      if (!pickedDecoy) correctlyDeferred++;
+    }
+  }
+
+  const notes =
+    level === "clear"
+      ? "trivial exact/fuzzy cases"
+      : level === "boundary"
+        ? "at fuzzy threshold edge"
+        : level === "decoy"
+          ? "correctly deferred, not auto-resolved to decoy"
+          : "correctly flagged as exception";
+
+  void deferredRows;
+
+  return {
+    matchRate: recall,
+    precision,
+    recall,
+    trueMatchCount: trueMatches.length,
+    predictedMatchCount: predicted.length,
+    truePositive,
+    falsePositive,
+    correctlyDeferred:
+      level === "decoy" || level === "unresolvable"
+        ? correctlyDeferred
+        : undefined,
+    deferredTotal:
+      level === "decoy" || level === "unresolvable" ? deferredTotal : undefined,
+    notes,
+  };
 }
 
 export function scoreAgainstGroundTruth(
@@ -61,10 +196,6 @@ export function scoreAgainstGroundTruth(
     if (g.settlementId) trueExceptionIds.add(`settlement:${g.settlementId}`);
   }
 
-  // Batched payouts that are unmatched should not count as "true exceptions"
-  // for settlement components — they are true matches awaiting split.
-  // Exception accuracy uses only explicit exception labels.
-
   const predictedExceptionIds = new Set(
     result.exceptions.map((e) => `${e.source}:${e.recordId}`),
   );
@@ -90,6 +221,17 @@ export function scoreAgainstGroundTruth(
     human: result.matches.filter((m) => m.matchedBy === "human").length,
   };
 
+  const levels: AmbiguityLevel[] = [
+    "clear",
+    "boundary",
+    "decoy",
+    "unresolvable",
+  ];
+  const byAmbiguityLevel = {} as Record<AmbiguityLevel, AmbiguitySliceMetrics>;
+  for (const level of levels) {
+    byAmbiguityLevel[level] = scoreSlice(level, result, groundTruth);
+  }
+
   return {
     matchRate: recall,
     precision,
@@ -113,6 +255,7 @@ export function scoreAgainstGroundTruth(
     seed,
     llmEnabled,
     llmProvider,
+    byAmbiguityLevel,
   };
 }
 
@@ -148,3 +291,5 @@ export function scoreMatches(
     meta.llmEnabled,
   );
 }
+
+export { emptySlice };

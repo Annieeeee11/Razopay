@@ -4,445 +4,641 @@
     "settlementId": "setl_0001",
     "paymentId": "pay_0001",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0002",
     "settlementId": "setl_0002",
     "paymentId": "pay_0002",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0003",
     "settlementId": "setl_0003",
     "paymentId": "pay_0003",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0004",
     "settlementId": "setl_0004",
     "paymentId": "pay_0004",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0005",
     "settlementId": "setl_0005",
     "paymentId": "pay_0005",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0006",
     "settlementId": "setl_0006",
     "paymentId": "pay_0006",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0007",
     "settlementId": "setl_0007",
     "paymentId": "pay_0007",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0008",
     "settlementId": "setl_0008",
     "paymentId": "pay_0008",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0009",
     "settlementId": "setl_0009",
     "paymentId": "pay_0009",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0010",
     "settlementId": "setl_0010",
     "paymentId": "pay_0010",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0011",
     "settlementId": "setl_0011",
     "paymentId": "pay_0011",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0012",
     "settlementId": "setl_0012",
     "paymentId": "pay_0012",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0013",
     "settlementId": "setl_0013",
     "paymentId": "pay_0013",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0014",
     "settlementId": "setl_0014",
     "paymentId": "pay_0014",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0015",
     "settlementId": "setl_0015",
     "paymentId": "pay_0015",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0016",
     "settlementId": "setl_0016",
     "paymentId": "pay_0016",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0017",
     "settlementId": "setl_0017",
     "paymentId": "pay_0017",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0018",
     "settlementId": "setl_0018",
     "paymentId": "pay_0018",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0019",
     "settlementId": "setl_0019",
     "paymentId": "pay_0019",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0020",
     "settlementId": "setl_0020",
     "paymentId": "pay_0020",
     "label": "match",
-    "class": "clean"
+    "class": "clean",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0021",
     "settlementId": "setl_0021",
     "paymentId": "pay_0021",
     "label": "match",
-    "class": "clean"
+    "class": "date_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0022",
     "settlementId": "setl_0022",
     "paymentId": "pay_0022",
     "label": "match",
-    "class": "clean"
+    "class": "date_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0023",
     "settlementId": "setl_0023",
     "paymentId": "pay_0023",
     "label": "match",
-    "class": "date_shifted"
+    "class": "date_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0024",
     "settlementId": "setl_0024",
     "paymentId": "pay_0024",
     "label": "match",
-    "class": "date_shifted"
+    "class": "date_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0025",
     "settlementId": "setl_0025",
     "paymentId": "pay_0025",
     "label": "match",
-    "class": "date_shifted"
+    "class": "date_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0026",
     "settlementId": "setl_0026",
     "paymentId": "pay_0026",
     "label": "match",
-    "class": "date_shifted"
+    "class": "date_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0027",
     "settlementId": "setl_0027",
     "paymentId": "pay_0027",
     "label": "match",
-    "class": "date_shifted"
+    "class": "amount_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0028",
     "settlementId": "setl_0028",
     "paymentId": "pay_0028",
     "label": "match",
-    "class": "date_shifted"
+    "class": "amount_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0029",
     "settlementId": "setl_0029",
     "paymentId": "pay_0029",
     "label": "match",
-    "class": "date_shifted"
+    "class": "amount_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0030",
     "settlementId": "setl_0030",
     "paymentId": "pay_0030",
     "label": "match",
-    "class": "amount_shifted"
+    "class": "amount_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0031",
     "settlementId": "setl_0031",
     "paymentId": "pay_0031",
     "label": "match",
-    "class": "amount_shifted"
+    "class": "amount_shifted",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0032",
     "settlementId": "setl_0032",
     "paymentId": "pay_0032",
     "label": "match",
-    "class": "amount_shifted"
+    "class": "reference_mangled",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0033",
     "settlementId": "setl_0033",
     "paymentId": "pay_0033",
     "label": "match",
-    "class": "amount_shifted"
+    "class": "reference_mangled",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0034",
     "settlementId": "setl_0034",
     "paymentId": "pay_0034",
     "label": "match",
-    "class": "amount_shifted"
+    "class": "reference_mangled",
+    "ambiguityLevel": "clear"
   },
   {
     "bankCreditId": "bank_0035",
     "settlementId": "setl_0035",
     "paymentId": "pay_0035",
     "label": "match",
-    "class": "reference_mangled"
+    "class": "reference_mangled_boundary",
+    "ambiguityLevel": "boundary"
   },
   {
     "bankCreditId": "bank_0036",
     "settlementId": "setl_0036",
     "paymentId": "pay_0036",
     "label": "match",
-    "class": "reference_mangled"
+    "class": "reference_mangled_boundary",
+    "ambiguityLevel": "boundary"
   },
   {
     "bankCreditId": "bank_0037",
     "settlementId": "setl_0037",
     "paymentId": "pay_0037",
     "label": "match",
-    "class": "reference_mangled"
+    "class": "reference_mangled_boundary",
+    "ambiguityLevel": "boundary"
   },
   {
     "bankCreditId": "bank_0038",
     "settlementId": "setl_0038",
     "paymentId": "pay_0038",
     "label": "match",
-    "class": "reference_mangled"
+    "class": "reference_mangled_boundary",
+    "ambiguityLevel": "boundary"
   },
   {
     "bankCreditId": "bank_0039",
     "settlementId": "setl_0039",
     "paymentId": "pay_0039",
     "label": "match",
-    "class": "reference_mangled"
+    "class": "reference_mangled_boundary",
+    "ambiguityLevel": "boundary"
   },
   {
     "bankCreditId": "bank_0040",
     "settlementId": "setl_0040",
+    "decoySettlementId": "setl_0041",
     "paymentId": "pay_0040",
     "label": "match",
-    "class": "clean"
-  },
-  {
-    "bankCreditId": "bank_0041",
-    "settlementId": null,
-    "label": "exception",
-    "exceptionType": "duplicate_bank",
-    "class": "duplicate_bank"
-  },
-  {
-    "bankCreditId": "bank_0042",
-    "settlementId": "setl_0041",
-    "paymentId": "pay_0041",
-    "label": "match",
-    "class": "clean"
-  },
-  {
-    "bankCreditId": "bank_0043",
-    "settlementId": null,
-    "label": "exception",
-    "exceptionType": "duplicate_bank",
-    "class": "duplicate_bank"
-  },
-  {
-    "bankCreditId": "bank_0044",
-    "settlementId": null,
-    "label": "exception",
-    "exceptionType": "currency_mismatch",
-    "class": "currency_mismatch"
+    "class": "near_duplicate_decoy",
+    "ambiguityLevel": "decoy"
   },
   {
     "bankCreditId": null,
-    "settlementId": "setl_0042",
-    "paymentId": "pay_0042",
+    "settlementId": "setl_0041",
+    "paymentId": "pay_0041",
     "label": "exception",
-    "exceptionType": "currency_mismatch",
-    "class": "currency_mismatch"
+    "exceptionType": "near_duplicate_decoy",
+    "class": "near_duplicate_decoy",
+    "ambiguityLevel": "decoy"
   },
   {
-    "bankCreditId": "bank_0045",
-    "settlementId": null,
-    "label": "exception",
-    "exceptionType": "currency_mismatch",
-    "class": "currency_mismatch"
+    "bankCreditId": "bank_0041",
+    "settlementId": "setl_0042",
+    "decoySettlementId": "setl_0043",
+    "paymentId": "pay_0042",
+    "label": "match",
+    "class": "near_duplicate_decoy",
+    "ambiguityLevel": "decoy"
   },
   {
     "bankCreditId": null,
     "settlementId": "setl_0043",
     "paymentId": "pay_0043",
     "label": "exception",
-    "exceptionType": "currency_mismatch",
-    "class": "currency_mismatch"
+    "exceptionType": "near_duplicate_decoy",
+    "class": "near_duplicate_decoy",
+    "ambiguityLevel": "decoy"
   },
   {
-    "bankCreditId": null,
+    "bankCreditId": "bank_0042",
     "settlementId": "setl_0044",
+    "decoySettlementId": "setl_0045",
     "paymentId": "pay_0044",
-    "label": "exception",
-    "exceptionType": "fee_tax_mismatch",
-    "class": "fee_tax_mismatch"
+    "label": "match",
+    "class": "near_duplicate_decoy",
+    "ambiguityLevel": "decoy"
   },
   {
     "bankCreditId": null,
     "settlementId": "setl_0045",
     "paymentId": "pay_0045",
     "label": "exception",
-    "exceptionType": "fee_tax_mismatch",
-    "class": "fee_tax_mismatch"
+    "exceptionType": "near_duplicate_decoy",
+    "class": "near_duplicate_decoy",
+    "ambiguityLevel": "decoy"
   },
   {
-    "bankCreditId": null,
+    "bankCreditId": "bank_0043",
     "settlementId": "setl_0046",
-    "paymentId": "pay_0046",
-    "label": "exception",
-    "exceptionType": "fee_tax_mismatch",
-    "class": "fee_tax_mismatch"
+    "settlementIds": [
+      "setl_0046",
+      "setl_0047",
+      "setl_0048"
+    ],
+    "label": "match",
+    "class": "batched_payout",
+    "ambiguityLevel": "clear"
   },
   {
-    "bankCreditId": null,
-    "settlementId": "setl_0047",
-    "paymentId": "pay_0047",
-    "label": "exception",
-    "exceptionType": "settlement_pending_bank",
-    "class": "settlement_pending_bank"
-  },
-  {
-    "bankCreditId": null,
-    "settlementId": "setl_0048",
-    "paymentId": "pay_0048",
-    "label": "exception",
-    "exceptionType": "settlement_pending_bank",
-    "class": "settlement_pending_bank"
-  },
-  {
-    "bankCreditId": null,
+    "bankCreditId": "bank_0044",
     "settlementId": "setl_0049",
-    "paymentId": "pay_0049",
+    "settlementIds": [
+      "setl_0049",
+      "setl_0050",
+      "setl_0051"
+    ],
+    "label": "match",
+    "class": "batched_payout",
+    "ambiguityLevel": "clear"
+  },
+  {
+    "bankCreditId": "bank_0045",
+    "settlementId": null,
+    "settlementIds": [
+      "setl_0052",
+      "setl_0053",
+      "setl_0054",
+      "setl_0055"
+    ],
     "label": "exception",
-    "exceptionType": "settlement_pending_bank",
-    "class": "settlement_pending_bank"
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
   },
   {
     "bankCreditId": null,
-    "settlementId": "setl_0050",
-    "paymentId": "pay_0050",
+    "settlementId": "setl_0052",
     "label": "exception",
-    "exceptionType": "settlement_pending_bank",
-    "class": "settlement_pending_bank"
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0053",
+    "label": "exception",
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0054",
+    "label": "exception",
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0055",
+    "label": "exception",
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
   },
   {
     "bankCreditId": "bank_0046",
     "settlementId": null,
+    "settlementIds": [
+      "setl_0056",
+      "setl_0057",
+      "setl_0058",
+      "setl_0059"
+    ],
     "label": "exception",
-    "exceptionType": "unclaimed_bank_credit",
-    "class": "unclaimed_bank_credit"
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0056",
+    "label": "exception",
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0057",
+    "label": "exception",
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0058",
+    "label": "exception",
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0059",
+    "label": "exception",
+    "exceptionType": "batched_payout_ambiguous",
+    "class": "batched_payout_ambiguous",
+    "ambiguityLevel": "decoy"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0060",
+    "paymentId": "pay_0060",
+    "label": "exception",
+    "exceptionType": "fee_tax_mismatch",
+    "class": "fee_tax_mismatch",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0061",
+    "paymentId": "pay_0061",
+    "label": "exception",
+    "exceptionType": "fee_tax_mismatch",
+    "class": "fee_tax_mismatch",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0062",
+    "paymentId": "pay_0062",
+    "label": "exception",
+    "exceptionType": "fee_tax_mismatch",
+    "class": "fee_tax_mismatch",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0063",
+    "paymentId": "pay_0063",
+    "label": "exception",
+    "exceptionType": "settlement_pending_bank",
+    "class": "settlement_pending_bank",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0064",
+    "paymentId": "pay_0064",
+    "label": "exception",
+    "exceptionType": "settlement_pending_bank",
+    "class": "settlement_pending_bank",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0065",
+    "paymentId": "pay_0065",
+    "label": "exception",
+    "exceptionType": "settlement_pending_bank",
+    "class": "settlement_pending_bank",
+    "ambiguityLevel": "unresolvable"
   },
   {
     "bankCreditId": "bank_0047",
     "settlementId": null,
     "label": "exception",
     "exceptionType": "unclaimed_bank_credit",
-    "class": "unclaimed_bank_credit"
+    "class": "unclaimed_bank_credit",
+    "ambiguityLevel": "unresolvable"
   },
   {
     "bankCreditId": "bank_0048",
     "settlementId": null,
     "label": "exception",
     "exceptionType": "unclaimed_bank_credit",
-    "class": "unclaimed_bank_credit"
+    "class": "unclaimed_bank_credit",
+    "ambiguityLevel": "unresolvable"
   },
   {
     "bankCreditId": "bank_0049",
     "settlementId": null,
     "label": "exception",
-    "exceptionType": "unclaimed_bank_credit",
-    "class": "unclaimed_bank_credit"
+    "exceptionType": "currency_mismatch",
+    "class": "currency_mismatch",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0066",
+    "paymentId": "pay_0066",
+    "label": "exception",
+    "exceptionType": "currency_mismatch",
+    "class": "currency_mismatch",
+    "ambiguityLevel": "unresolvable"
   },
   {
     "bankCreditId": "bank_0050",
-    "settlementId": "setl_0051",
-    "settlementIds": [
-      "setl_0051",
-      "setl_0052"
-    ],
-    "label": "match",
-    "class": "batched_payout"
+    "settlementId": null,
+    "label": "exception",
+    "exceptionType": "currency_mismatch",
+    "class": "currency_mismatch",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": null,
+    "settlementId": "setl_0067",
+    "paymentId": "pay_0067",
+    "label": "exception",
+    "exceptionType": "currency_mismatch",
+    "class": "currency_mismatch",
+    "ambiguityLevel": "unresolvable"
   },
   {
     "bankCreditId": "bank_0051",
-    "settlementId": "setl_0053",
-    "settlementIds": [
-      "setl_0053",
-      "setl_0054"
-    ],
-    "label": "match",
-    "class": "batched_payout"
+    "settlementId": null,
+    "label": "exception",
+    "exceptionType": "unresolvable_noise",
+    "class": "unresolvable_noise",
+    "ambiguityLevel": "unresolvable"
   },
   {
     "bankCreditId": "bank_0052",
-    "settlementId": "setl_0055",
-    "settlementIds": [
-      "setl_0055",
-      "setl_0056",
-      "setl_0057"
-    ],
+    "settlementId": null,
+    "label": "exception",
+    "exceptionType": "unresolvable_noise",
+    "class": "unresolvable_noise",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": "bank_0053",
+    "settlementId": null,
+    "label": "exception",
+    "exceptionType": "unresolvable_noise",
+    "class": "unresolvable_noise",
+    "ambiguityLevel": "unresolvable"
+  },
+  {
+    "bankCreditId": "bank_0054",
+    "settlementId": "setl_0068",
+    "paymentId": "pay_0068",
     "label": "match",
-    "class": "batched_payout"
+    "class": "clean",
+    "ambiguityLevel": "clear"
+  },
+  {
+    "bankCreditId": "bank_0055",
+    "settlementId": null,
+    "label": "exception",
+    "exceptionType": "duplicate_bank",
+    "class": "duplicate_bank",
+    "ambiguityLevel": "clear"
+  },
+  {
+    "bankCreditId": "bank_0056",
+    "settlementId": "setl_0069",
+    "paymentId": "pay_0069",
+    "label": "match",
+    "class": "clean",
+    "ambiguityLevel": "clear"
+  },
+  {
+    "bankCreditId": "bank_0057",
+    "settlementId": null,
+    "label": "exception",
+    "exceptionType": "duplicate_bank",
+    "class": "duplicate_bank",
+    "ambiguityLevel": "clear"
   }
 ]

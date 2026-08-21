@@ -5,6 +5,7 @@ import type { Correction } from "../data/types.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 export const CORRECTIONS_PATH = join(ROOT, "output", "corrections.json");
+export const DEMO_CORRECTIONS_PATH = join(ROOT, "data", "demo_corrections.json");
 
 export function loadCorrections(
   path: string = CORRECTIONS_PATH,
@@ -16,6 +17,13 @@ export function loadCorrections(
   } catch {
     return [];
   }
+}
+
+/** Prefer output/corrections.json; fall back to generated demo file. */
+export function loadCorrectionsWithFallback(): Correction[] {
+  const primary = loadCorrections(CORRECTIONS_PATH);
+  if (primary.length > 0) return primary;
+  return loadCorrections(DEMO_CORRECTIONS_PATH);
 }
 
 /**
