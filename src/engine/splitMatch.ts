@@ -109,25 +109,23 @@ export function splitMatch(
     if (solutions.length === 0) continue;
 
     if (solutions.length > 1) {
-      const sets = solutions
-        .slice(0, 5)
-        .map((sol) =>
-          sol
-            .map((i) => candidates[i]!.settlementId)
-            .sort()
-            .join("+"),
-        )
-        .join(" | ");
-      // Don't auto-resolve; leave for LLM/exception with candidate sets listed
-      exceptions.push({
-        recordId: bank.id,
-        source: "bank",
-        reason: `ambiguous split — multiple settlement combinations sum to credit: ${sets}`,
-        exceptionType: "batched_payout",
+      const splitOptions = solutions.slice(0, 5).map((sol) =>
+        sol.map((i) => candidates[i]!.settlementId).sort(),
+      );
+      const primarySettlement = candidates[solutions[0]![0]!]!;
+      // Don't auto-resolve; leave for LLM with candidate sets listed
+      ambiguous.push({
+        bank,
+        settlement: primarySettlement,
+        score: 0.5,
+        reasoning: `ambiguous split — multiple settlement combinations sum to credit: ${splitOptions
+          .map((ids) => ids.join("+"))
+          .join(" | ")}`,
+        splitOptions,
+        kind: "split",
       });
       resolvedBank.add(bank.id);
-      // Mark involved settlements in first two solutions as touched? Don't claim them —
-      // leave settlements free but bank is flagged ambiguous-exception
+      // Leave settlements free for LLM to claim a chosen combination
       continue;
     }
 

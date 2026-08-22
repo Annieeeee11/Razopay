@@ -1,5 +1,6 @@
 import type { AmbiguousCandidate } from "../../data/types.js";
 import {
+  buildResolvePayload,
   parseVerdictJson,
   SETTLEMENT_SYSTEM_PROMPT,
   type LlmProvider,
@@ -27,23 +28,16 @@ export class OllamaProvider implements LlmProvider {
   name = "ollama";
   private host: string;
   private model: string;
+  private seed: number;
 
-  constructor(model = "llama3.2", host = DEFAULT_HOST) {
+  constructor(model = "llama3.2", host = DEFAULT_HOST, seed = 42) {
     this.model = model;
     this.host = host;
+    this.seed = seed;
   }
 
   async resolve(pair: AmbiguousCandidate): Promise<LlmVerdict> {
-    const userContent = JSON.stringify(
-      {
-        bankCredit: pair.bank,
-        settlement: pair.settlement,
-        deterministicScore: pair.score,
-        deterministicReason: pair.reasoning,
-      },
-      null,
-      2,
-    );
+    const userContent = buildResolvePayload(pair);
 
     const res = await fetch(`${this.host}/api/chat`, {
       method: "POST",
@@ -51,6 +45,7 @@ export class OllamaProvider implements LlmProvider {
       body: JSON.stringify({
         model: this.model,
         stream: false,
+        options: { temperature: 0, seed: this.seed },
         messages: [
           { role: "system", content: SETTLEMENT_SYSTEM_PROMPT },
           { role: "user", content: userContent },

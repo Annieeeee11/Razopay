@@ -151,6 +151,7 @@ async function runOnce(options: {
     skipLlm: options.skipLlm,
     llmProvider: options.llmProvider,
     llmModel: options.llmModel,
+    seed: options.seed,
   };
   const result = await reconcile(
     dataset.payments,
@@ -163,6 +164,7 @@ async function runOnce(options: {
     skipLlm: options.skipLlm,
     llmProvider: options.llmProvider,
     llmModel: options.llmModel,
+    seed: options.seed,
   });
   const llmEnabled = providerName !== "none" && !options.skipLlm;
   const metrics = scoreAgainstGroundTruth(

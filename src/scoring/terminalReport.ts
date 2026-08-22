@@ -10,7 +10,7 @@ import {
   yellow,
 } from "../cli/ansi.js";
 import { pct } from "./metrics.js";
-import type { FullReport } from "./report.js";
+import { groupExceptionsForDisplay, type FullReport } from "./report.js";
 
 const EXCEPTION_PREVIEW = 20;
 const LABEL_W = 20;
@@ -166,26 +166,32 @@ export function formatTerminal(
     out.push("");
   }
 
-  const exceptions = report.exceptions;
-  const preview = exceptions.slice(0, EXCEPTION_PREVIEW);
+  const grouped = groupExceptionsForDisplay(report.exceptions);
+  const preview = grouped.slice(0, EXCEPTION_PREVIEW);
   const exBody: string[] = [];
   if (preview.length === 0) {
     exBody.push(green("none"));
   } else {
     for (const e of preview) {
-      const id = e.recordId.padEnd(12);
-      const srcName = e.source.padEnd(12);
+      const id = e.recordIds.join(",").padEnd(20);
+      const srcName = e.source.padEnd(14);
       exBody.push(`${cyan(id)}   ${dim(srcName)}   ${e.reason}`);
     }
-    if (exceptions.length > EXCEPTION_PREVIEW) {
+    if (grouped.length > EXCEPTION_PREVIEW) {
       exBody.push(
         dim(
-          `… and ${exceptions.length - EXCEPTION_PREVIEW} more (see output/report.md)`,
+          `… and ${grouped.length - EXCEPTION_PREVIEW} more groups (see output/report.md)`,
         ),
       );
     }
   }
-  out.push(box(`exceptions (${exceptions.length})`, exBody, fitWidth(exBody)));
+  out.push(
+    box(
+      `exceptions (${grouped.length} groups / ${report.exceptions.length} records)`,
+      exBody,
+      fitWidth(exBody),
+    ),
+  );
   out.push("");
 
   out.push(

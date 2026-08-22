@@ -80,6 +80,14 @@ export interface Exception {
   source: ExceptionSource;
   reason: string;
   exceptionType?: DiscrepancyClass;
+  /** Sibling record IDs sharing the same root cause (display grouping). */
+  relatedIds?: string[];
+}
+
+export interface AmbiguousRival {
+  settlement: SettlementRecord;
+  score: number;
+  reasoning: string;
 }
 
 export interface AmbiguousCandidate {
@@ -87,6 +95,11 @@ export interface AmbiguousCandidate {
   settlement: SettlementRecord;
   score: number;
   reasoning: string;
+  /** Top alternate settlements for the same bank (fuzzy band). */
+  rivals?: AmbiguousRival[];
+  /** Tied subset-sum combinations (settlement ID lists) for split ambiguity. */
+  splitOptions?: string[][];
+  kind?: "fuzzy" | "split";
 }
 
 export interface PassTiming {
@@ -123,6 +136,8 @@ export interface ReconcileConfig {
   splitMaxCombo: number;
   llmProvider?: "anthropic" | "ollama" | "none";
   llmModel?: string;
+  /** Reproducibility seed forwarded to LLM providers (Ollama). */
+  seed?: number;
   applyCorrections?: boolean;
 }
 

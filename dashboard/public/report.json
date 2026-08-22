@@ -13,13 +13,13 @@
     "trueExceptionCount": 30,
     "predictedExceptionCount": 32,
     "correctlyFlaggedExceptions": 24,
-    "throughputRecordsPerSec": 8454.11,
+    "throughputRecordsPerSec": 8512.36,
     "timing": {
-      "exactMs": 0.521,
-      "fuzzyMs": 11.426,
-      "splitMs": 1.064,
-      "llmMs": 0.283,
-      "totalMs": 14.904
+      "exactMs": 0.371,
+      "fuzzyMs": 12.036,
+      "splitMs": 0.709,
+      "llmMs": 0.352,
+      "totalMs": 14.802
     },
     "matchSourceBreakdown": {
       "exact": 22,
@@ -260,30 +260,30 @@
     {
       "bankCreditId": "bank_0035",
       "settlementId": "setl_0035",
-      "confidence": 0.94,
+      "confidence": 0.97,
       "matchedBy": "fuzzy",
-      "reasoning": "UTR similarity 0.80"
+      "reasoning": "UTR similarity 0.90"
     },
     {
       "bankCreditId": "bank_0036",
       "settlementId": "setl_0036",
-      "confidence": 0.94,
+      "confidence": 0.97,
       "matchedBy": "fuzzy",
-      "reasoning": "UTR similarity 0.80"
+      "reasoning": "UTR similarity 0.90"
     },
     {
       "bankCreditId": "bank_0037",
       "settlementId": "setl_0037",
-      "confidence": 0.94,
+      "confidence": 0.97,
       "matchedBy": "fuzzy",
-      "reasoning": "UTR similarity 0.80"
+      "reasoning": "UTR similarity 0.90"
     },
     {
       "bankCreditId": "bank_0038",
       "settlementId": "setl_0038",
-      "confidence": 0.94,
+      "confidence": 0.97,
       "matchedBy": "fuzzy",
-      "reasoning": "UTR similarity 0.80"
+      "reasoning": "UTR similarity 0.90"
     },
     {
       "bankCreditId": "bank_0027",
@@ -445,56 +445,98 @@
       "exceptionType": "currency_mismatch"
     },
     {
-      "recordId": "bank_0045",
-      "source": "bank",
-      "reason": "ambiguous split — multiple settlement combinations sum to credit: setl_0052+setl_0053 | setl_0054+setl_0055",
-      "exceptionType": "batched_payout"
-    },
-    {
-      "recordId": "bank_0046",
-      "source": "bank",
-      "reason": "ambiguous split — multiple settlement combinations sum to credit: setl_0056+setl_0057 | setl_0058+setl_0059",
-      "exceptionType": "batched_payout"
-    },
-    {
       "recordId": "bank_0039",
       "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "setl_0039"
+      ]
     },
     {
       "recordId": "setl_0039",
       "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "bank_0039"
+      ]
     },
     {
       "recordId": "bank_0040",
       "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "setl_0040",
+        "setl_0041"
+      ]
     },
     {
       "recordId": "setl_0040",
       "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "bank_0040",
+        "setl_0041"
+      ]
     },
     {
       "recordId": "bank_0041",
       "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "setl_0042",
+        "setl_0043"
+      ]
     },
     {
       "recordId": "setl_0042",
       "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "bank_0041",
+        "setl_0043"
+      ]
     },
     {
       "recordId": "bank_0042",
       "source": "bank",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "setl_0044",
+        "setl_0045"
+      ]
     },
     {
       "recordId": "setl_0044",
       "source": "settlement",
-      "reason": "ambiguous — LLM unavailable"
+      "reason": "ambiguous — LLM unavailable",
+      "relatedIds": [
+        "bank_0042",
+        "setl_0045"
+      ]
+    },
+    {
+      "recordId": "bank_0045",
+      "source": "bank",
+      "reason": "ambiguous split — LLM unavailable: ambiguous split — multiple settlement combinations sum to credit: setl_0052+setl_0053 | setl_0054+setl_0055",
+      "exceptionType": "batched_payout",
+      "relatedIds": [
+        "setl_0052",
+        "setl_0053",
+        "setl_0054",
+        "setl_0055"
+      ]
+    },
+    {
+      "recordId": "bank_0046",
+      "source": "bank",
+      "reason": "ambiguous split — LLM unavailable: ambiguous split — multiple settlement combinations sum to credit: setl_0056+setl_0057 | setl_0058+setl_0059",
+      "exceptionType": "batched_payout",
+      "relatedIds": [
+        "setl_0056",
+        "setl_0057",
+        "setl_0058",
+        "setl_0059"
+      ]
     },
     {
       "recordId": "bank_0047",
@@ -589,10 +631,11 @@
   ],
   "knownLimitations": [
     "Split matching uses bounded subset-sum (max pool 25, max combo 6) — demo-scale only.",
-    "Ambiguous multi-solution batches are not auto-resolved.",
+    "Ambiguous multi-solution batches are routed to the LLM/human tier (not auto-picked).",
     "No FX conversion — currency mismatches are never auto-resolved.",
-    "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity only.",
+    "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity (prefix-aware).",
     "Duplicate bank credits: first claim wins; extras become exceptions.",
-    "Near-duplicate decoys and boundary UTR mangles are intentional hard cases for LLM/human tiers."
+    "Near-duplicate decoys and boundary UTR mangles are intentional hard cases for LLM/human tiers.",
+    "Ollama LLM calls use temperature 0 and a fixed seed for reproducibility; Anthropic uses temperature 0."
   ]
 }

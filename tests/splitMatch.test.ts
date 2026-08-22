@@ -78,11 +78,12 @@ describe("splitMatch", () => {
         settlement({ settlementId: "S4", netAmount: 150, utr: "UTRMULTI_S4" }),
       ],
     );
-    // 100+200 and 150+150 both = 300
+    // 100+200 and 150+150 both = 300 — route to LLM as ambiguous, do not auto-pick
     expect(result.matches).toHaveLength(0);
-    expect(
-      result.exceptions.some((e) => e.reason.includes("multiple settlement")),
-    ).toBe(true);
+    expect(result.exceptions).toHaveLength(0);
+    expect(result.ambiguous).toHaveLength(1);
+    expect(result.ambiguous[0]?.kind).toBe("split");
+    expect(result.ambiguous[0]?.splitOptions?.length).toBeGreaterThanOrEqual(2);
   });
 
   it("leaves pool when no solution", () => {

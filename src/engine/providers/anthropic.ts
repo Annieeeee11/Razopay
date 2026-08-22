@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { AmbiguousCandidate } from "../../data/types.js";
 import {
+  buildResolvePayload,
   parseVerdictJson,
   SETTLEMENT_SYSTEM_PROMPT,
   type LlmProvider,
@@ -16,20 +17,12 @@ export class AnthropicProvider implements LlmProvider {
   }
 
   async resolve(pair: AmbiguousCandidate): Promise<LlmVerdict> {
-    const userContent = JSON.stringify(
-      {
-        bankCredit: pair.bank,
-        settlement: pair.settlement,
-        deterministicScore: pair.score,
-        deterministicReason: pair.reasoning,
-      },
-      null,
-      2,
-    );
+    const userContent = buildResolvePayload(pair);
 
     const response = await this.client.messages.create({
       model: "claude-3-5-haiku-latest",
       max_tokens: 200,
+      temperature: 0,
       system: SETTLEMENT_SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     });

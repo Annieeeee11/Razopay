@@ -41,7 +41,7 @@ This is a Razorpay-style 3-way settlement reconciliation: Payments → Settlemen
 | LLM matches | 2 | 0 |
 | Provider | ollama | none |
 
-With Ollama (`llama3.2`) on the leftover ambiguous pairs, recall went from **91.30%** to **95.65%**. In that ablation run it correctly resolved **2 of the 4** near-duplicate/boundary pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`; the model cited amount + UTR). The other two true matches were called `no_match` because it treated truncated UTRs as unequal strings. That’s called out under Known Limitations. A later run without `--compare-llm`, same provider, rewrote `output/report.json` and the dashboard main view so the LLM tier shows up in the match-source chart. Recall can shift a bit between runs since local LLM output isn’t deterministic. If there’s no provider, both columns fall back to `none` and recall stays at the skip-llm baseline.
+With Ollama (`llama3.2`) on the leftover ambiguous pairs, recall went from **91.30%** to **95.65%**. In that ablation run it correctly resolved **2 of the 4** near-duplicate/boundary pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`; the model cited amount + UTR). The other two true matches were called `no_match` because it treated truncated UTRs as unequal strings — the engine now passes rival candidates and an explicit truncated-UTR prefix rule into the LLM prompt, and the deterministic scorer gives prefix UTRs (≥6 chars) a 0.9 floor. Re-run `--compare-llm` locally with Ollama to refresh the ablation table. Ollama calls use `temperature: 0` and the reconcile `--seed` for reproducibility; Anthropic uses `temperature: 0`. If there’s no provider, both columns fall back to `none` and recall stays at the skip-llm baseline.
 
 **Human loop:** Accept in the dashboard writes `output/corrections.json`. **Re-run with corrections** (or `npm run reconcile -- --seed 42 --skip-llm --apply-corrections`) brings recall to **95.65%** with **Human: 2** in the match-source chart. That run used `data/demo_corrections.json` when no corrections file existed yet.
 
@@ -121,11 +121,12 @@ npm run check-baseline
 ## Known limitations
 
 - Split matching is bounded (pool ≤25, combo ≤6)
-- Ambiguous multi-solution batches are not auto-picked
+- Ambiguous multi-solution batches are not auto-picked; they are routed to the LLM/human tier with the tied combinations listed
 - No FX conversion
-- Near dup / boundary cases need LLM or human for full recall
-- On the Ollama `llama3.2` ablation run (seed 42), the model correctly matched 2 of 4 residual true pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`) using amount + UTR signals, but wrongly rejected the other two true near dup pairs (`bank_0040`/`setl_0040`, `bank_0041`/`setl_0042`) as `no_match` because truncated UTRs weren’t treated as prefixes. Those stayed false negatives.
-- Local LLM output isn’t deterministic. A follow-up run with the same seed and model resolved a different 3 of 4 residual pairs (recall 97.83% in `output/report.json`, which the dashboard uses) and rejected `bank_0042`/`setl_0044` for the same truncated-UTR reason. We didn’t re-run until the numbers looked nicer.
+- Near dup / boundary cases still need LLM or human for full recall on seed 42 skip-llm (boundary match rate 80%; decoy deferral holds)
+- On the prior Ollama `llama3.2` ablation run (seed 42), the model correctly matched 2 of 4 residual true pairs (`bank_0039`/`setl_0039`, `bank_0042`/`setl_0044`) using amount + UTR signals, but wrongly rejected the other two true near dup pairs (`bank_0040`/`setl_0040`, `bank_0041`/`setl_0042`) as `no_match` because truncated UTRs weren’t treated as prefixes. The engine now instructs the model to judge on shared prefixes and includes rival candidates; re-measure with local Ollama to update the ablation table
+- Ollama LLM calls fix `temperature: 0` and pass the reconcile seed; Anthropic uses `temperature: 0`. Remaining variance is model/runtime behaviour, not unset sampling knobs
+- Exception rows in the terminal/markdown report are grouped by `relatedIds` for display; `report.json` keeps per-record flags so scoring is unchanged
 
 ## What broke, and what we did about it
 

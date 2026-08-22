@@ -76,6 +76,7 @@ export interface Exception {
   source: string;
   reason: string;
   exceptionType?: string;
+  relatedIds?: string[];
 }
 
 export interface FullReport {

@@ -44,7 +44,14 @@ export function referenceSimilarity(a: string, b: string): number {
   if (na.length === 0 || nb.length === 0) return 0;
   const dist = levenshtein(na, nb);
   const maxLen = Math.max(na.length, nb.length);
-  return 1 - dist / maxLen;
+  const lev = 1 - dist / maxLen;
+  const shorter = na.length <= nb.length ? na : nb;
+  const longer = na.length <= nb.length ? nb : na;
+  // Truncated bank UTRs are a documented generator mangle; short prefixes are weak evidence.
+  if (shorter.length >= 6 && longer.startsWith(shorter)) {
+    return Math.max(lev, 0.9);
+  }
+  return lev;
 }
 
 function parseDate(dateStr: string): number {
@@ -230,12 +237,34 @@ export function fuzzyMatch(
       c.score < config.ambiguousHigh
     ) {
       resolvedBank.add(c.bank.id);
-      usedSettlement.add(c.settlement.settlementId);
+
+      // Top-K scored settlements for this bank (primary + rivals) for LLM disambiguation.
+      const TOP_K = 3;
+      const forBank = candidates
+        .filter(
+          (x) =>
+            !x.currencyMismatch &&
+            x.bank.id === c.bank.id &&
+            x.score >= config.ambiguousLow &&
+            !usedSettlement.has(x.settlement.settlementId),
+        )
+        .sort((a, b) => b.score - a.score);
+      const top = forBank.slice(0, TOP_K);
+      const primary = top[0] ?? c;
+      usedSettlement.add(primary.settlement.settlementId);
+      const rivals = top.slice(1).map((r) => ({
+        settlement: r.settlement,
+        score: Number(r.score.toFixed(4)),
+        reasoning: r.reason,
+      }));
+
       ambiguous.push({
-        bank: c.bank,
-        settlement: c.settlement,
-        score: Number(c.score.toFixed(4)),
-        reasoning: c.reason,
+        bank: primary.bank,
+        settlement: primary.settlement,
+        score: Number(primary.score.toFixed(4)),
+        reasoning: primary.reason,
+        rivals: rivals.length > 0 ? rivals : undefined,
+        kind: "fuzzy",
       });
     }
   }

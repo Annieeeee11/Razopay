@@ -147,11 +147,15 @@ export async function reconcile(
   const splitMs = performance.now() - tSplit;
 
   const t2 = performance.now();
-  const pass3 = await llmResolve(pass2.ambiguous, {
-    skipLlm: cfg.skipLlm,
-    llmProvider: cfg.llmProvider,
-    llmModel: cfg.llmModel,
-  });
+  const pass3 = await llmResolve(
+    [...pass2.ambiguous, ...passSplit.ambiguous],
+    {
+      skipLlm: cfg.skipLlm,
+      llmProvider: cfg.llmProvider,
+      llmModel: cfg.llmModel,
+      seed: cfg.seed,
+    },
+  );
   const llmMs = performance.now() - t2;
 
   const matches: MatchResult[] = [
@@ -225,6 +229,26 @@ export async function reconcile(
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(reasonForLeftoverSettlement(s.settlementId));
+  }
+
+  // Link integrity-flagged settlements with leftover bank credits sharing the same UTR.
+  const settlementById = new Map(settlements.map((s) => [s.settlementId, s]));
+  const bankByUtr = new Map(bankCredits.map((b) => [b.utr, b]));
+  const byKey = new Map(deduped.map((e) => [`${e.source}:${e.recordId}`, e]));
+  for (const e of deduped) {
+    if (e.source !== "settlement" || e.exceptionType !== "fee_tax_mismatch") {
+      continue;
+    }
+    const setl = settlementById.get(e.recordId);
+    if (!setl) continue;
+    const bank = bankByUtr.get(setl.utr);
+    if (!bank) continue;
+    const bankEx = byKey.get(`bank:${bank.id}`);
+    if (!bankEx) continue;
+    const setlRelated = new Set([...(e.relatedIds ?? []), bank.id]);
+    const bankRelated = new Set([...(bankEx.relatedIds ?? []), e.recordId]);
+    e.relatedIds = [...setlRelated];
+    bankEx.relatedIds = [...bankRelated];
   }
 
   const totalMs = performance.now() - totalStart;

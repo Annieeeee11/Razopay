@@ -21,12 +21,79 @@ export interface FullReport {
 
 export const KNOWN_LIMITATIONS = [
   "Split matching uses bounded subset-sum (max pool 25, max combo 6) — demo-scale only.",
-  "Ambiguous multi-solution batches are not auto-resolved.",
+  "Ambiguous multi-solution batches are routed to the LLM/human tier (not auto-picked).",
   "No FX conversion — currency mismatches are never auto-resolved.",
-  "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity only.",
+  "Fuzzy matching uses net/credited amount, settlement/credit dates, and UTR similarity (prefix-aware).",
   "Duplicate bank credits: first claim wins; extras become exceptions.",
   "Near-duplicate decoys and boundary UTR mangles are intentional hard cases for LLM/human tiers.",
+  "Ollama LLM calls use temperature 0 and a fixed seed for reproducibility; Anthropic uses temperature 0.",
 ];
+
+export interface GroupedExceptionRow {
+  recordIds: string[];
+  source: string;
+  reason: string;
+}
+
+/** Collapse related exception rows for human-readable reports (metrics stay per-record). */
+export function groupExceptionsForDisplay(
+  exceptions: Exception[],
+): GroupedExceptionRow[] {
+  const parent = new Map<string, string>();
+  const find = (x: string): string => {
+    const p = parent.get(x) ?? x;
+    if (p !== x) {
+      const root = find(p);
+      parent.set(x, root);
+      return root;
+    }
+    return x;
+  };
+  const union = (a: string, b: string) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+
+  for (const e of exceptions) {
+    const key = `${e.source}:${e.recordId}`;
+    if (!parent.has(key)) parent.set(key, key);
+    for (const rid of e.relatedIds ?? []) {
+      const candidates = [
+        `bank:${rid}`,
+        `settlement:${rid}`,
+        rid.includes(":") ? rid : "",
+      ].filter(Boolean);
+      for (const c of candidates) {
+        if (exceptions.some((x) => `${x.source}:${x.recordId}` === c)) {
+          if (!parent.has(c)) parent.set(c, c);
+          union(key, c);
+        }
+      }
+    }
+  }
+
+  const groups = new Map<string, Exception[]>();
+  for (const e of exceptions) {
+    const key = `${e.source}:${e.recordId}`;
+    const root = find(key);
+    const list = groups.get(root) ?? [];
+    list.push(e);
+    groups.set(root, list);
+  }
+
+  const rows: GroupedExceptionRow[] = [];
+  for (const members of groups.values()) {
+    const ids = [...new Set(members.map((m) => m.recordId))];
+    const sources = [...new Set(members.map((m) => m.source))];
+    rows.push({
+      recordIds: ids,
+      source: sources.join("+"),
+      reason: members[0]!.reason,
+    });
+  }
+  return rows;
+}
 
 export function formatMarkdown(report: FullReport): string {
   const m = report.metrics;
@@ -189,12 +256,17 @@ export function formatMarkdown(report: FullReport): string {
   if (report.exceptions.length === 0) {
     lines.push("_No exceptions._");
   } else {
-    lines.push("| Record ID | Source | Reason |");
+    const grouped = groupExceptionsForDisplay(report.exceptions);
+    lines.push("| Record ID(s) | Source | Reason |");
     lines.push("| --- | --- | --- |");
-    for (const e of report.exceptions) {
+    for (const e of grouped) {
       const reason = e.reason.replace(/\|/g, "\\|");
-      lines.push(`| ${e.recordId} | ${e.source} | ${reason} |`);
+      lines.push(`| ${e.recordIds.join(", ")} | ${e.source} | ${reason} |`);
     }
+    lines.push("");
+    lines.push(
+      `_Grouped by relatedIds for display (${grouped.length} groups from ${report.exceptions.length} per-record flags). Scoring still uses per-record exceptions._`,
+    );
   }
   lines.push("");
 
